@@ -23,7 +23,7 @@ namespace Forja3D
         {
             float t = Time.time;
             // Mecerse: cabeceo y balanceo suaves (la cubierta real es el suelo; solo se mueve el casco visible)
-            float balanceo = Mathf.Sin(t * 0.7f) * 1.1f, cabeceo = Mathf.Sin(t * 0.45f + 1f) * 0.6f, alto = Mathf.Sin(t * 0.9f) * 0.06f;
+            float balanceo = Mathf.Sin(t * 0.7f) * 0.45f, cabeceo = Mathf.Sin(t * 0.45f + 1f) * 0.12f, alto = Mathf.Sin(t * 0.9f) * 0.04f;
             if (choque > 0f)
             {
                 float k = Time.time - choque;

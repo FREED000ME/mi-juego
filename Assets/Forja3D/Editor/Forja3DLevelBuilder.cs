@@ -223,7 +223,9 @@ namespace Forja3D.EditorTools
                     var ps = vapor.AddComponent<ParticleSystem>(); ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
                     var main = ps.main; main.startLifetime = 3f; main.startSpeed = new ParticleSystem.MinMaxCurve(0.2f, 0.6f);
                     main.startSize = new ParticleSystem.MinMaxCurve(0.8f, 2f); main.maxParticles = 60; main.scalingMode = ParticleSystemScalingMode.Shape;
-                    main.startColor = new ParticleSystem.MinMaxGradient(new Color(0.35f, 0.12f, 0.1f, 0.25f), new Color(0.2f, 0.06f, 0.06f, 0.35f));
+                    // Vapor del color del agua (Aqueronte rojizo; la Estigia verde negruzca)
+                    var tinte = string.IsNullOrEmpty(n.color_rio) ? new Color(0.35f, 0.12f, 0.1f) : Color.Lerp(Hex(n.color_rio, Color.gray), Color.white, 0.25f) * 1.6f;
+                    tinte.a = 0.3f; main.startColor = tinte;
                     main.simulationSpace = ParticleSystemSimulationSpace.World;
                     var em = ps.emission; em.rateOverTime = 4f * (fin - col + 1);
                     var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Rectangle;
@@ -280,15 +282,22 @@ namespace Forja3D.EditorTools
                     if (lb.size.z > lb.size.x) { gb.transform.rotation = Quaternion.Euler(0, 90, 0) * gb.transform.rotation; lb = Forja3DImporter.Limites(gb); }
                     // escala = largo en celdas (a lo largo de las columnas del mapa)
                     float kxB = Mathf.Max(1f, sp.escala) * c / Mathf.Max(0.01f, lb.size.x);
-                    // A lo alto no se escala igual: la borda queda a ~1,2 m sobre la cubierta y no tapa la pelea
-                    float kyB = Mathf.Min(kxB, 2.6f / Mathf.Max(0.01f, lb.size.y));
+                    // A lo alto no se escala igual (si no, el casco mediría 18 m): ~4,5 m de casco, borda a ~1 m sobre la cubierta
+                    float kyB = Mathf.Min(kxB, 4.5f / Mathf.Max(0.01f, lb.size.y));
                     var escB = gb.transform.localScale; gb.transform.localScale = new Vector3(escB.x * kxB, escB.y * kyB, escB.z * kxB);
                     lb = Forja3DImporter.Limites(gb);
                     var raizB = new GameObject("BarcaCubierta"); raizB.transform.SetParent(nivel.transform);
                     raizB.transform.position = Pos(f, col);
                     gb.transform.SetParent(raizB.transform, true);
-                    // El fondo del casco queda bajo el suelo: la cubierta coincide con el terreno
-                    gb.transform.position += new Vector3(raizB.transform.position.x - lb.center.x, raizB.transform.position.y - lb.min.y - lb.size.y * 0.5f, raizB.transform.position.z - lb.center.z);
+                    // Solo el fondo del casco queda bajo el suelo (la barca de Carón tiene la borda a ~40 % de su altura)
+                    gb.transform.position += new Vector3(raizB.transform.position.x - lb.center.x, raizB.transform.position.y - lb.min.y - lb.size.y * 0.1f, raizB.transform.position.z - lb.center.z);
+                    // Tablas de la cubierta encima del terreno (visual, sin colisión: se camina sobre el suelo)
+                    var tablas = GameObject.CreatePrimitive(PrimitiveType.Cube); tablas.name = "Tablas";
+                    UnityEngine.Object.DestroyImmediate(tablas.GetComponent<Collider>());
+                    tablas.transform.SetParent(gb.transform.parent, false);
+                    tablas.transform.position = raizB.transform.position + Vector3.up * 0.03f;
+                    tablas.transform.localScale = new Vector3(lb.size.x * 0.72f, 0.06f, lb.size.z * 0.62f);
+                    tablas.GetComponent<Renderer>().sharedMaterial = Mat("cubierta_barca", new Color(0.2f, 0.13f, 0.08f));
                     foreach (var rb in gb.GetComponentsInChildren<Renderer>()) rb.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                     raizB.AddComponent<Forja3DBarca>();
                 }
@@ -1012,7 +1021,7 @@ namespace Forja3D.EditorTools
             var main = ps.main;
             main.loop = true; main.duration = 2f; main.startLifetime = new ParticleSystem.MinMaxCurve(1.2f, 2.2f);
             main.startSpeed = new ParticleSystem.MinMaxCurve(0.2f, 0.7f); main.startSize = new ParticleSystem.MinMaxCurve(0.08f * alto / 2f, 0.22f * alto / 2f);
-            main.startColor = new ParticleSystem.MinMaxGradient(color, Color.Lerp(color, Color.white, 0.4f));
+            main.startColor = color; // un solo color puro por pecado (el del nivel)
             main.simulationSpace = ParticleSystemSimulationSpace.World; main.maxParticles = 120; main.gravityModifier = -0.15f;
             var em = ps.emission; em.rateOverTime = 28f;
             var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Box; sh.scale = new Vector3(alto * 0.45f, alto * 0.9f, alto * 0.45f);

@@ -26,7 +26,7 @@
       "seguir": false,
       "dialogo": [],
       "voz": "",
-      "aura": "#d0201a",
+      "aura": "#3f8f5a",
       "fantasma": false,
       "clave": false,
       "desvanecer": false,
@@ -214,7 +214,7 @@
   "narracion": [],
   "transicion": "Ya el barquero había caído al agua negra. Delante se alzaban las mezquitas de la ciudad, bermejas como si salieran del fuego.\n\nHabíamos llegado a las puertas de Dite, y sobre ellas vi más de mil caídos del cielo.",
   "meta_modelo": "puerta",
-  "color_rio": "#0c140e",
+  "color_rio": "#10231a",
   "clima": "",
   "lentitud": 1,
   "terreno": {
