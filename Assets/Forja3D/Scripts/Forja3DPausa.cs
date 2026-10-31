@@ -9,7 +9,7 @@ namespace Forja3D
     public class Forja3DPausa : MonoBehaviour
     {
         public static bool Activa { get; private set; }
-        Transform canvas; GameObject panel, lista; Text listaTexto, listaTitulo; RectTransform contenido;
+        Transform canvas; GameObject panel, lista; Text listaTitulo; RectTransform contenido;
 
         public void Crear(Transform c)
         {
@@ -33,8 +33,7 @@ namespace Forja3D
                 float y = 0.68f;
                 Boton(panel.transform, "CONTINUAR", new Vector2(0.5f, y), Vector2.zero, new Vector2(560, 100), 42, Cerrar); y -= 0.13f;
                 Boton(panel.transform, "VIRTUDES", new Vector2(0.5f, y), Vector2.zero, new Vector2(560, 100), 42, () => Forja3DVirtudes.Abrir(canvas, () => { })); y -= 0.13f;
-                Boton(panel.transform, "RELIQUIAS", new Vector2(0.5f, y), Vector2.zero, new Vector2(560, 100), 42, () => MostrarLista("RELIQUIAS", Forja3DProgreso.Reliquias, "Aún no has recogido reliquias.")); y -= 0.13f;
-                Boton(panel.transform, "PERSONAJES", new Vector2(0.5f, y), Vector2.zero, new Vector2(560, 100), 42, () => MostrarLista("PERSONAJES", Forja3DProgreso.Personajes, "Aún no has conocido a nadie.")); y -= 0.13f;
+                Boton(panel.transform, "LIBRO", new Vector2(0.5f, y), Vector2.zero, new Vector2(560, 100), 42, () => MostrarLibro(true)); y -= 0.13f;
                 Boton(panel.transform, "MENÚ PRINCIPAL", new Vector2(0.5f, y), Vector2.zero, new Vector2(560, 100), 42, () => { Activa = false; Time.timeScale = 1f; SceneManager.LoadScene(0); });
             }
             panel.SetActive(true);
@@ -48,41 +47,69 @@ namespace Forja3D
             Activa = false; Time.timeScale = 1f;
         }
 
-        void MostrarLista(string titulo, System.Collections.Generic.List<(string n, string d)> datos, string vacio)
+        // Libro: dos pestañas (reliquias y personajes); cada entrada con su retrato, nombre y descripción
+        bool pestanaReliquias = true;
+        void MostrarLibro(bool reliquias)
         {
+            pestanaReliquias = reliquias;
             if (!lista)
             {
-                lista = Fondo(canvas, "Lista", 0.95f);
-                listaTitulo = Forja3DGameManager.Texto(lista.transform, "", 64, TextAnchor.MiddleCenter);
+                lista = Fondo(canvas, "Libro", 0.96f);
+                listaTitulo = Forja3DGameManager.Texto(lista.transform, "", 60, TextAnchor.MiddleCenter);
                 listaTitulo.color = new Color(0.92f, 0.75f, 0.42f); listaTitulo.fontStyle = FontStyle.Bold;
-                Anclar(listaTitulo.rectTransform, new Vector2(0, 0.86f), new Vector2(1, 0.97f));
-                // Lista desplazable
+                Anclar(listaTitulo.rectTransform, new Vector2(0, 0.88f), new Vector2(1, 0.98f));
+                Boton(lista.transform, "RELIQUIAS", new Vector2(0.36f, 0.83f), Vector2.zero, new Vector2(360, 76), 34, () => MostrarLibro(true));
+                Boton(lista.transform, "PERSONAJES", new Vector2(0.64f, 0.83f), Vector2.zero, new Vector2(360, 76), 34, () => MostrarLibro(false));
                 var vista = new GameObject("Vista", typeof(RectTransform), typeof(Image), typeof(Mask), typeof(ScrollRect));
                 vista.transform.SetParent(lista.transform, false);
-                Anclar(vista.GetComponent<RectTransform>(), new Vector2(0.08f, 0.16f), new Vector2(0.92f, 0.85f));
+                Anclar(vista.GetComponent<RectTransform>(), new Vector2(0.06f, 0.15f), new Vector2(0.94f, 0.78f));
                 vista.GetComponent<Image>().color = new Color(1, 1, 1, 0.02f); vista.GetComponent<Mask>().showMaskGraphic = false;
-                var cont = new GameObject("Contenido", typeof(RectTransform), typeof(ContentSizeFitter));
+                var cont = new GameObject("Contenido", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
                 cont.transform.SetParent(vista.transform, false);
                 contenido = cont.GetComponent<RectTransform>();
                 contenido.anchorMin = new Vector2(0, 1); contenido.anchorMax = new Vector2(1, 1); contenido.pivot = new Vector2(0.5f, 1); contenido.sizeDelta = Vector2.zero;
+                var vl = cont.GetComponent<VerticalLayoutGroup>(); vl.spacing = 24; vl.childControlHeight = true; vl.childControlWidth = true; vl.childForceExpandHeight = false; vl.childForceExpandWidth = true;
                 cont.GetComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-                listaTexto = Forja3DGameManager.Texto(cont.transform, "", 36, TextAnchor.UpperLeft);
-                listaTexto.supportRichText = true; listaTexto.horizontalOverflow = HorizontalWrapMode.Wrap; listaTexto.verticalOverflow = VerticalWrapMode.Overflow;
-                var lt = listaTexto.rectTransform; lt.anchorMin = new Vector2(0, 1); lt.anchorMax = new Vector2(1, 1); lt.pivot = new Vector2(0.5f, 1);
-                var fit = listaTexto.gameObject.AddComponent<ContentSizeFitter>(); fit.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
                 var sr = vista.GetComponent<ScrollRect>(); sr.content = contenido; sr.horizontal = false; sr.movementType = ScrollRect.MovementType.Clamped;
                 Boton(lista.transform, "VOLVER", new Vector2(0.5f, 0.07f), Vector2.zero, new Vector2(360, 90), 40, () => lista.SetActive(false));
             }
-            listaTitulo.text = titulo;
-            var sb = new System.Text.StringBuilder();
-            if (datos.Count == 0) sb.Append($"<i>{vacio}</i>");
-            foreach (var (n, d) in datos) sb.Append($"<color=#ebbf6b><b>{n}</b></color>\n<i>{d}</i>\n\n");
-            listaTexto.text = sb.ToString();
-            // El contenido mide lo que el texto
-            Canvas.ForceUpdateCanvases();
-            contenido.sizeDelta = new Vector2(0, listaTexto.preferredHeight + 40);
+            listaTitulo.text = reliquias ? "LIBRO · RELIQUIAS" : "LIBRO · PERSONAJES";
+            for (int i = contenido.childCount - 1; i >= 0; i--) Destroy(contenido.GetChild(i).gameObject);
+            var datos = reliquias ? Forja3DProgreso.Reliquias : Forja3DProgreso.Personajes;
+            if (datos.Count == 0)
+            {
+                var v = Forja3DGameManager.Texto(contenido, reliquias ? "<i>Aún no has recogido reliquias.</i>" : "<i>Aún no has conocido a nadie.</i>", 36, TextAnchor.MiddleCenter);
+                v.supportRichText = true; v.gameObject.AddComponent<LayoutElement>().preferredHeight = 120;
+            }
+            foreach (var (n, d) in datos) Entrada(n, d);
             contenido.anchoredPosition = Vector2.zero;
             lista.SetActive(true); lista.transform.SetAsLastSibling();
+        }
+
+        void Entrada(string nombre, string desc)
+        {
+            var fila = new GameObject(nombre, typeof(RectTransform), typeof(Image), typeof(HorizontalLayoutGroup));
+            fila.transform.SetParent(contenido, false);
+            fila.GetComponent<Image>().color = new Color(0.2f, 0.12f, 0.08f, 0.55f);
+            var hl = fila.GetComponent<HorizontalLayoutGroup>(); hl.padding = new RectOffset(16, 16, 16, 16); hl.spacing = 28;
+            hl.childControlWidth = true; hl.childControlHeight = true; hl.childForceExpandWidth = false; hl.childForceExpandHeight = false;
+            hl.childAlignment = TextAnchor.MiddleLeft;
+            // Retrato
+            var img = new GameObject("Retrato", typeof(RectTransform), typeof(RawImage), typeof(LayoutElement));
+            img.transform.SetParent(fila.transform, false);
+            var le = img.GetComponent<LayoutElement>(); le.preferredWidth = le.minWidth = 220; le.preferredHeight = le.minHeight = 220;
+            var raw = img.GetComponent<RawImage>(); var tex = Forja3DRetrato.Cargar(nombre);
+            if (tex) raw.texture = tex;
+            else
+            {
+                raw.color = new Color(0.12f, 0.08f, 0.06f);
+                var ini = Forja3DGameManager.Texto(img.transform, nombre.Substring(0, 1).ToUpperInvariant(), 110, TextAnchor.MiddleCenter);
+                ini.color = new Color(0.92f, 0.75f, 0.42f, 0.6f);
+            }
+            // Nombre y descripción
+            var txt = Forja3DGameManager.Texto(fila.transform, $"<color=#ebbf6b><b>{nombre}</b></color>\n<i>{desc}</i>", 34, TextAnchor.MiddleLeft);
+            txt.supportRichText = true; txt.horizontalOverflow = HorizontalWrapMode.Wrap; txt.verticalOverflow = VerticalWrapMode.Overflow;
+            var lt = txt.gameObject.AddComponent<LayoutElement>(); lt.flexibleWidth = 1; lt.minHeight = 220;
         }
 
         static GameObject Fondo(Transform padre, string nombre, float alfa)

@@ -20,6 +20,7 @@ namespace Forja3D
         {
             if (!c.CompareTag("Player")) return;
             Forja3DProgreso.GuardarReliquia(nombre, descripcion);
+            transform.position = inicio; Forja3DRetrato.Capturar(gameObject, nombre, false);
             Forja3DGameManager.Mensaje("RECOGISTE: " + nombre.ToUpperInvariant());
             Forja3DFX.Chispas(transform.position, 24, true);
             Forja3DAudio.Sonar("victoria", transform.position, 0.5f, 0f, 1.5f);

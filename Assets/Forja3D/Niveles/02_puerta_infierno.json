@@ -68,7 +68,7 @@
     {
       "simbolo": "C",
       "tipo": "moneda",
-      "modelo": "",
+      "modelo": "losa",
       "vida": 2,
       "escala": 1,
       "color": "",

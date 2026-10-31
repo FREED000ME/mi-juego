@@ -43,7 +43,7 @@
     {
       "simbolo": "C",
       "tipo": "moneda",
-      "modelo": "",
+      "modelo": "rama",
       "vida": 2,
       "escala": 1,
       "color": "",
@@ -68,7 +68,7 @@
     {
       "simbolo": "D",
       "tipo": "moneda",
-      "modelo": "",
+      "modelo": "medallon",
       "vida": 2,
       "escala": 1,
       "color": "",
@@ -88,7 +88,7 @@
       "pisable": false,
       "ancho": 0,
       "tras_jefe": false,
-      "descripcion": "Un destello del sol sobre el monte que Dante quiso subir: la esperanza que las tres fieras le cerraron."
+      "descripcion": "Medallón de sol dorado: la luz que asomaba sobre el monte que Dante quiso subir, la esperanza que las tres fieras le cerraron."
     },
     {
       "simbolo": "A",

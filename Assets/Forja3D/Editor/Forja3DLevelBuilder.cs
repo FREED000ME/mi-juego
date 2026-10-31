@@ -241,6 +241,9 @@ namespace Forja3D.EditorTools
                     vapor.transform.localRotation = Quaternion.Euler(180, 0, 0); // el eje Z local queda hacia arriba: emite hacia el cielo
                     vapor.GetComponent<ParticleSystemRenderer>().sharedMaterial = MatParticula();
                     ps.Play();
+                    // El río no se corta en el borde: baja en cascada desde las colinas
+                    if (col == 0) Cascada(Pos(f, col) + Vector3.left * c * 0.5f, Vector3.right, c, matRio, nivel.transform);
+                    if (fin == cols - 1) Cascada(Pos(f, fin) + Vector3.right * c * 0.5f, Vector3.left, c, matRio, nivel.transform);
                     col = fin;
                 }
 
@@ -306,7 +309,7 @@ namespace Forja3D.EditorTools
                     float L = Mathf.Max(2f, sp.escala) * c, W = Mathf.Max(2, sp.ancho > 0 ? sp.ancho : 5) * c;
                     var centroB = Pos(f, col);
                     var raizB = new GameObject("BarcaCubierta"); raizB.transform.SetParent(nivel.transform); raizB.transform.position = centroB;
-                    // Casco
+                    // Casco: largo y ancho a la medida de la cubierta; a lo alto, algo menos que proporcional (no se aplasta la lámpara)
                     var modB = InstanciarModelo(sp.modelo);
                     if (modB)
                     {
@@ -314,26 +317,60 @@ namespace Forja3D.EditorTools
                         foreach (var lz in modB.GetComponentsInChildren<Light>()) UnityEngine.Object.DestroyImmediate(lz);
                         var lb = Forja3DImporter.Limites(modB);
                         if (lb.size.z > lb.size.x) { modB.transform.rotation = Quaternion.Euler(0, 90, 0) * modB.transform.rotation; lb = Forja3DImporter.Limites(modB); }
-                        // La raíz del FBX viene girada: se escala una envoltura alineada con el mundo
                         var envB = new GameObject("Casco"); envB.transform.position = lb.center;
                         modB.transform.SetParent(envB.transform, true);
-                        envB.transform.localScale = new Vector3(L * 1.1f / Mathf.Max(0.01f, lb.size.x), 3.6f / Mathf.Max(0.01f, lb.size.y), W * 1.18f / Mathf.Max(0.01f, lb.size.z));
+                        float kx = L * 1.12f / Mathf.Max(0.01f, lb.size.x);
+                        envB.transform.localScale = new Vector3(kx, kx * 0.55f, W * 1.2f / Mathf.Max(0.01f, lb.size.z));
                         lb = Forja3DImporter.Limites(envB);
                         envB.transform.SetParent(raizB.transform, true);
-                        // La borda (a ~40 % del alto del casco) queda a ~0,9 m sobre la cubierta
-                        envB.transform.position += new Vector3(centroB.x - lb.center.x, centroB.y - lb.min.y - lb.size.y * 0.15f, centroB.z - lb.center.z);
+                        // La borda (≈40 % del alto) queda a ~1 m sobre la cubierta; el resto del casco, bajo el agua
+                        float hundir = Mathf.Max(0f, lb.size.y * 0.4f - 1.0f);
+                        envB.transform.position += new Vector3(centroB.x - lb.center.x, centroB.y - lb.min.y - hundir, centroB.z - lb.center.z);
                         foreach (var rb in envB.GetComponentsInChildren<Renderer>()) rb.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                        // La lámpara (el punto más alto del casco) se enciende
+                        Vector3 alto = centroB; float maxY = float.MinValue;
+                        foreach (var mf in envB.GetComponentsInChildren<MeshFilter>())
+                            if (mf.sharedMesh) foreach (var v in mf.sharedMesh.vertices) { var w = mf.transform.TransformPoint(v); if (w.y > maxY) { maxY = w.y; alto = w; } }
+                        if (maxY > float.MinValue)
+                        {
+                            var lampara = new GameObject("Lampara"); lampara.transform.SetParent(envB.transform, true); lampara.transform.position = alto - Vector3.up * 0.4f;
+                            var ll = lampara.AddComponent<Light>(); ll.type = LightType.Point; ll.color = new Color(1f, 0.6f, 0.25f); ll.range = 14f; ll.intensity = 2.4f;
+                            var llama = GameObject.CreatePrimitive(PrimitiveType.Sphere); UnityEngine.Object.DestroyImmediate(llama.GetComponent<Collider>());
+                            llama.transform.SetParent(lampara.transform, false); llama.transform.localScale = Vector3.one * 0.5f;
+                            var ml = Mat("llama_lampara", new Color(1f, 0.55f, 0.15f)); ml.EnableKeyword("_EMISSION"); ml.SetColor("_EmissionColor", new Color(2.2f, 1.1f, 0.3f));
+                            llama.GetComponent<Renderer>().sharedMaterial = ml;
+                        }
                         envB.transform.SetAsFirstSibling(); // Forja3DBarca mece el primer hijo
                     }
-                    // Piso de tablas
-                    var tablas = GameObject.CreatePrimitive(PrimitiveType.Cube); tablas.name = "Tablas";
-                    UnityEngine.Object.DestroyImmediate(tablas.GetComponent<Collider>());
-                    tablas.transform.SetParent(raizB.transform, false);
-                    tablas.transform.position = centroB + Vector3.up * 0.06f;
-                    tablas.transform.localScale = new Vector3(L, 0.1f, W);
-                    var matT = MatTablas(id, new Vector2(L / 2.4f, W / 2.4f));
-                    tablas.GetComponent<Renderer>().sharedMaterial = matT;
-                    // Sin bordas invisibles: la barca está rodeada de agua y quien salta al pantano se ahoga
+                    // Contorno de la cubierta (afilado en proa y popa, como el casco)
+                    var contorno = new[] {
+                        new Vector2(-L / 2f, -W * 0.2f), new Vector2(-L * 0.35f, -W / 2f), new Vector2(L * 0.35f, -W / 2f), new Vector2(L / 2f, -W * 0.2f),
+                        new Vector2(L / 2f, W * 0.2f), new Vector2(L * 0.35f, W / 2f), new Vector2(-L * 0.35f, W / 2f), new Vector2(-L / 2f, W * 0.2f) };
+                    // Piso de tablas con esa forma
+                    var mallaT = new Mesh { name = "cubierta_" + id };
+                    var vs = new Vector3[contorno.Length + 1]; var uv = new Vector2[vs.Length]; var tri = new int[contorno.Length * 3];
+                    vs[0] = Vector3.zero; uv[0] = Vector2.zero;
+                    for (int k = 0; k < contorno.Length; k++)
+                    {
+                        vs[k + 1] = new Vector3(contorno[k].x, 0, contorno[k].y); uv[k + 1] = contorno[k] / 2.4f;
+                        tri[k * 3] = 0; tri[k * 3 + 1] = 1 + (k + 1) % contorno.Length; tri[k * 3 + 2] = 1 + k;
+                    }
+                    mallaT.vertices = vs; mallaT.uv = uv; mallaT.triangles = tri; mallaT.RecalculateNormals(); mallaT.RecalculateBounds();
+                    AssetDatabase.CreateAsset(mallaT, $"{RutaGenerado}/Datos/cubierta_{id}.asset");
+                    var tablas = new GameObject("Tablas", typeof(MeshFilter), typeof(MeshRenderer));
+                    tablas.transform.SetParent(raizB.transform, false); tablas.transform.localPosition = Vector3.up * 0.08f;
+                    tablas.GetComponent<MeshFilter>().sharedMesh = mallaT;
+                    tablas.GetComponent<MeshRenderer>().sharedMaterial = MatTablas(id, Vector2.one);
+                    // Borde bajo (55 cm) en todo el contorno: no se sale caminando, pero un salto lo cruza… y al agua
+                    for (int k = 0; k < contorno.Length; k++)
+                    {
+                        var a2 = contorno[k]; var b2 = contorno[(k + 1) % contorno.Length];
+                        var medio = (a2 + b2) / 2f; var dir = b2 - a2;
+                        var borde = new GameObject("Borda"); borde.transform.SetParent(raizB.transform, false);
+                        borde.transform.localPosition = new Vector3(medio.x, 0.28f, medio.y);
+                        borde.transform.localRotation = Quaternion.LookRotation(new Vector3(dir.x, 0, dir.y));
+                        borde.AddComponent<BoxCollider>().size = new Vector3(0.3f, 0.55f, dir.magnitude + 0.3f);
+                    }
                     raizB.AddComponent<Forja3DBarca>();
                 }
 
@@ -1226,6 +1263,23 @@ namespace Forja3D.EditorTools
         static void Moneda(Simbolo s, Vector3 p, Transform padre, string id)
         {
             var g = new GameObject("Reliquia"); g.transform.SetParent(padre); g.transform.position = p + Vector3.up * 1.1f;
+            // Con modelo propio (la rama, el laurel…): el modelo a ~0,7 m, con un halo de luz
+            var modR = !string.IsNullOrEmpty(s.modelo) ? InstanciarModelo(s.modelo) : null;
+            if (modR)
+            {
+                foreach (var cc in modR.GetComponentsInChildren<Collider>()) UnityEngine.Object.DestroyImmediate(cc);
+                var bR = Forja3DImporter.Limites(modR);
+                modR.transform.localScale *= 0.75f / Mathf.Max(0.01f, Mathf.Max(bR.size.x, bR.size.y, bR.size.z));
+                bR = Forja3DImporter.Limites(modR);
+                modR.transform.SetParent(g.transform, true);
+                modR.transform.position += g.transform.position - bR.center;
+                var luzR = new GameObject("Brillo").AddComponent<Light>(); luzR.transform.SetParent(g.transform, false);
+                luzR.type = LightType.Point; luzR.color = new Color(1f, 0.85f, 0.5f); luzR.range = 4f; luzR.intensity = 1.8f;
+                var tR = g.AddComponent<SphereCollider>(); tR.isTrigger = true; tR.radius = 1.3f;
+                var cR = g.AddComponent<Forja3DCollectible>();
+                cR.nombre = string.IsNullOrEmpty(s.nombre) ? "Reliquia" : s.nombre; cR.descripcion = s.descripcion ?? "";
+                return;
+            }
             var m = Mat("reliquia", new Color(1f, 0.82f, 0.35f)); m.EnableKeyword("_EMISSION"); m.SetColor("_EmissionColor", new Color(0.55f, 0.38f, 0.08f));
             // Relicario: una gema (cubo de canto) sobre un pie
             var gema = GameObject.CreatePrimitive(PrimitiveType.Cube); gema.transform.SetParent(g.transform, false);
@@ -1674,6 +1728,48 @@ namespace Forja3D.EditorTools
             Guardar(m, $"roca_oro_{id}_{doradoCache.Count}");
             doradoCache[clave] = m;
             return m;
+        }
+
+        // Cascada: una lámina del mismo líquido que cae por la ladera, con chorros y espuma (o vapor) al pie
+        static void Cascada(Vector3 pie, Vector3 haciaDentro, float ancho, Material mat, Transform padre)
+        {
+            var g = new GameObject("Cascada"); g.transform.SetParent(padre); g.transform.position = pie;
+            g.transform.rotation = Quaternion.LookRotation(haciaDentro);
+            float alto = 11f;
+            var lamina = GameObject.CreatePrimitive(PrimitiveType.Quad); lamina.name = "Lamina";
+            UnityEngine.Object.DestroyImmediate(lamina.GetComponent<Collider>());
+            lamina.transform.SetParent(g.transform, false);
+            // Apoyada en la colina: inclinada hacia atrás, sube y se aleja del mapa
+            lamina.transform.localRotation = Quaternion.Euler(-35f, 180f, 0);
+            lamina.transform.localPosition = new Vector3(0, alto * 0.5f * Mathf.Cos(35f * Mathf.Deg2Rad), -alto * 0.5f * Mathf.Sin(35f * Mathf.Deg2Rad));
+            lamina.transform.localScale = new Vector3(ancho * 1.1f, alto, 1f);
+            lamina.GetComponent<Renderer>().sharedMaterial = mat;
+            lamina.AddComponent<Forja3DCascada>();
+            // Dorso (el sombreado estándar solo pinta una cara)
+            var dorso = UnityEngine.Object.Instantiate(lamina, g.transform); dorso.name = "LaminaDorso";
+            dorso.transform.localRotation = lamina.transform.localRotation * Quaternion.Euler(0, 180f, 0);
+            // Chorros que caen
+            var ps = new GameObject("Chorros").AddComponent<ParticleSystem>(); ps.transform.SetParent(g.transform, false);
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            ps.transform.localPosition = new Vector3(0, alto * 0.8f, -alto * 0.5f);
+            var main = ps.main; main.startLifetime = 1.4f; main.startSpeed = new ParticleSystem.MinMaxCurve(1f, 3f); main.gravityModifier = 1.4f;
+            main.startSize = new ParticleSystem.MinMaxCurve(0.25f, 0.6f); main.maxParticles = 220; main.simulationSpace = ParticleSystemSimulationSpace.World;
+            var col0 = mat ? mat.GetColor("_Color") : Color.red; var tinte = Color.Lerp(col0, Color.white, 0.25f) * 2.2f; tinte.a = 0.7f; main.startColor = tinte;
+            var em = ps.emission; em.rateOverTime = 70f;
+            var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Box; sh.scale = new Vector3(ancho, 0.2f, 0.5f);
+            var vel = ps.velocityOverLifetime; vel.enabled = true; vel.space = ParticleSystemSimulationSpace.Local; vel.z = new ParticleSystem.MinMaxCurve(4f, 6f);
+            var rend = ps.GetComponent<ParticleSystemRenderer>(); rend.sharedMaterial = MatParticula(); rend.renderMode = ParticleSystemRenderMode.Stretch; rend.velocityScale = 0.15f; rend.lengthScale = 2f;
+            ps.Play();
+            // Espuma / vapor al pie
+            var es = new GameObject("Espuma").AddComponent<ParticleSystem>(); es.transform.SetParent(g.transform, false);
+            es.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            es.transform.localPosition = new Vector3(0, 0.3f, 0.6f);
+            var m2 = es.main; m2.startLifetime = 2.2f; m2.startSpeed = new ParticleSystem.MinMaxCurve(0.4f, 1.4f); m2.startSize = new ParticleSystem.MinMaxCurve(1f, 2.4f);
+            m2.maxParticles = 80; m2.simulationSpace = ParticleSystemSimulationSpace.World; var t2 = tinte; t2.a = 0.35f; m2.startColor = t2; m2.gravityModifier = -0.05f;
+            var e2 = es.emission; e2.rateOverTime = 18f;
+            var s2 = es.shape; s2.shapeType = ParticleSystemShapeType.Box; s2.scale = new Vector3(ancho, 0.2f, 1f);
+            es.GetComponent<ParticleSystemRenderer>().sharedMaterial = MatParticula();
+            es.Play();
         }
 
         static Color Hex(string hex, Color def) =>

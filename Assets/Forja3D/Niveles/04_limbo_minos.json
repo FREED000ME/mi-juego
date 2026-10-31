@@ -68,7 +68,7 @@
     {
       "simbolo": "C",
       "tipo": "moneda",
-      "modelo": "",
+      "modelo": "laurel",
       "vida": 2,
       "escala": 1,
       "color": "",
@@ -179,7 +179,7 @@
       "comportamiento": "",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": false,
+      "tras_jefe": true,
       "descripcion": "El poeta soberano, autor de la Ilíada y la Odisea. Vive en el Limbo con los grandes poetas de la Antigüedad."
     }
   ],

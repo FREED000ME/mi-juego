@@ -146,7 +146,7 @@
       "comportamiento": "",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": false,
+      "tras_jefe": true,
       "descripcion": "Florentino glotón de la época de Dante. Le profetiza las luchas entre bandos que ensangrentarán Florencia."
     }
   ],

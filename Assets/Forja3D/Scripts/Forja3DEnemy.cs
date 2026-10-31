@@ -227,7 +227,7 @@ namespace Forja3D
         void Alertar()
         {
             if (estado != Estado.Patrulla) return;
-            if (!string.IsNullOrEmpty(descripcion)) Forja3DProgreso.ConocerPersonaje(nombre, descripcion);
+            if (!string.IsNullOrEmpty(descripcion)) { Forja3DProgreso.ConocerPersonaje(nombre, descripcion); Forja3DRetrato.Capturar(gameObject, nombre, true); }
             if (esJefe) agente.ResetPath();
             proximaRuta = 0f; // traza la ruta hacia Dante en este mismo cuadro
             // Solo los jefes se detienen a rugir; los demás echan a andar sin pausa
