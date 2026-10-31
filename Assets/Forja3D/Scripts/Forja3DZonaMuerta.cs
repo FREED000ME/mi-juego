@@ -19,7 +19,14 @@ namespace Forja3D
         readonly List<Transform> almas = new List<Transform>();
         readonly List<float> angulos = new List<float>();
         float proximoDanio, emergencia, baseTrote, baseCorrer, arrastre = -1f;
-        bool dentro, avisado;
+        bool dentro, avisado, ardiendo;
+
+        // Caer al agua (Forja3DAguaMortal): las almas surgen y lo hunden; en la sangre, además, arde
+        public void Ahogar(bool fuego)
+        {
+            ardiendo = fuego; dentro = true; arrastre = Time.time; emergencia = 1f;
+            Forja3DAudio.Sonar("muerte_dante", jugador ? jugador.position : transform.position, 1f, 0f, fuego ? 0.8f : 0.7f);
+        }
 
         void Start()
         {
@@ -27,7 +34,7 @@ namespace Forja3D
             if (p) { jugador = p.transform; vida = p.GetComponent<Forja3DHealth>(); control = p.GetComponent<Forja3DPlayerController>(); cc = p.GetComponent<CharacterController>(); }
             if (control) { baseTrote = control.velocidadTrote; baseCorrer = control.velocidadCorrer; }
             foreach (Transform t in transform) if (t.name == "AlmaZona") { almas.Add(t); angulos.Add(Random.Range(0f, 360f)); }
-            if (vida) vida.AlMorir += () => { if (dentro) { arrastre = Time.time; Forja3DGameManager.Mensaje("LAS ALMAS TE ARRASTRAN AL FONDO"); } };
+            if (vida) vida.AlMorir += () => { if (dentro && arrastre < 0f) { arrastre = Time.time; Forja3DGameManager.Mensaje("LAS ALMAS TE ARRASTRAN AL FONDO"); } };
         }
 
         bool EnZona(Vector3 pos)
@@ -93,6 +100,8 @@ namespace Forja3D
             if (t > 2.2f) return;
             if (cc && cc.enabled) cc.enabled = false;
             jugador.position += Vector3.down * Time.deltaTime * 0.9f;
+            if (ardiendo && Random.value < 20f * Time.deltaTime) { Forja3DFX.Chispas(jugador.position + Vector3.up * (1.6f - t * 0.6f), 6); if (Random.value < 0.3f) Forja3DFX.Polvo(jugador.position + Vector3.up, 1f); }
+            if (!ardiendo && Random.value < 6f * Time.deltaTime) Forja3DFX.Polvo(jugador.position + Vector3.up * 0.3f, 0.8f);
             ColocarAlmas(1f, t * 0.9f);
         }
     }

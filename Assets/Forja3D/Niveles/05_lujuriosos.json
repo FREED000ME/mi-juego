@@ -7,7 +7,7 @@
     "#V....R......E...R.#",
     "#..E......E........#",
     "#R....C.....R...E..#",
-    "#....E....R.....C..#",
+    "#....E....R.....D..#",
     "#..R.....E.....R...#",
     "#......E.....E.FQ.M#",
     "####################"
@@ -35,7 +35,58 @@
       "comportamiento": "",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": false
+      "tras_jefe": false,
+      "descripcion": ""
+    },
+    {
+      "simbolo": "C",
+      "tipo": "moneda",
+      "modelo": "",
+      "vida": 2,
+      "escala": 1,
+      "color": "",
+      "nombre": "Página de Lancelote",
+      "seguir": false,
+      "dialogo": [],
+      "voz": "",
+      "aura": "",
+      "fantasma": false,
+      "clave": false,
+      "desvanecer": false,
+      "arma": "",
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": "",
+      "pisable": false,
+      "ancho": 0,
+      "tras_jefe": false,
+      "descripcion": "Hoja del libro que leían Paolo y Francesca el día de su primer beso. «Galeoto fue el libro y quien lo escribió»."
+    },
+    {
+      "simbolo": "D",
+      "tipo": "moneda",
+      "modelo": "",
+      "vida": 2,
+      "escala": 1,
+      "color": "",
+      "nombre": "Pluma de grulla",
+      "seguir": false,
+      "dialogo": [],
+      "voz": "",
+      "aura": "",
+      "fantasma": false,
+      "clave": false,
+      "desvanecer": false,
+      "arma": "",
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": "",
+      "pisable": false,
+      "ancho": 0,
+      "tras_jefe": false,
+      "descripcion": "Una pluma arrastrada por la tormenta que nunca deja descansar a los lujuriosos."
     },
     {
       "simbolo": "V",
@@ -64,7 +115,8 @@
       "comportamiento": "",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": false
+      "tras_jefe": false,
+      "descripcion": "Poeta romano, autor de la Eneida. Beatriz lo envía desde el Limbo para guiar a Dante por el Infierno y el Purgatorio: es la razón humana."
     },
     {
       "simbolo": "F",
@@ -121,7 +173,8 @@
       "comportamiento": "",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": false
+      "tras_jefe": false,
+      "descripcion": "Francesca da Rimini, asesinada junto a Paolo por su marido. Arrastrada para siempre por el viento de la lujuria."
     },
     {
       "simbolo": "Q",
@@ -154,7 +207,8 @@
       "comportamiento": "",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": false
+      "tras_jefe": false,
+      "descripcion": "Paolo Malatesta, cuñado y amante de Francesca. Llora en silencio mientras ella cuenta su historia."
     }
   ],
   "jugador": {

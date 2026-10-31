@@ -21,7 +21,11 @@ namespace Forja3D
 
         public static bool Terminado { get; private set; }
         // Bloquea al jugador y a los enemigos (fin del nivel o diálogo abierto)
-        public static bool Bloqueado => Terminado || Forja3DDialogue.Activo || Forja3DPergamino.Activo;
+        public static bool Bloqueado => Terminado || Forja3DDialogue.Activo || Forja3DPergamino.Activo || Forja3DPausa.Activa;
+        // Objetivo principal cumplido: la salida (oculta hasta ahora) aparece
+        public static event System.Action AlCumplirObjetivo;
+        static bool cumplidoAvisado;
+        public static bool ObjetivoCumplido => inst && inst.Cumplido();
         static Forja3DGameManager inst;
         static int enemigos, derrotados, monedas, recogidas, jefes, jefesDerrotados, claves, clavesOidas;
         static System.Collections.Generic.List<Forja3DHealth> vidasJefe = new System.Collections.Generic.List<Forja3DHealth>();
@@ -77,7 +81,7 @@ namespace Forja3D
         {
             // EXPANSIÓN FUTURA: en PC conviene un menú de pausa (Escape), opciones de gráficos y resolución;
             // en iOS/Android, pausar al salir de la app (OnApplicationPause). Hoy el juego no tiene menú.
-            inst = this; Terminado = false;
+            inst = this; Terminado = false; cumplidoAvisado = false;
             enemigos = derrotados = monedas = recogidas = jefes = jefesDerrotados = claves = clavesOidas = 0; vidasJefe.Clear(); nombresJefe.Clear();
             Time.timeScale = 1f;
             Application.targetFrameRate = 60; // PC: dejar -1 y usar QualitySettings.vSyncCount = 1
@@ -130,14 +134,19 @@ namespace Forja3D
             _ => true,
         };
 
-        void Revisar() { if (Cumplido() && objetivo != Objetivo.Meta) Aviso("¡Objetivo cumplido! Ve a la meta"); }
+        void Revisar()
+        {
+            if (!Cumplido()) return;
+            if (objetivo != Objetivo.Meta) Aviso("¡Objetivo cumplido! La salida se abre");
+            if (!cumplidoAvisado) { cumplidoAvisado = true; AlCumplirObjetivo?.Invoke(); }
+        }
 
         void Update()
         {
             if (!hud) return;
             var t = "";
             if (enemigos > 0) t += $"ENEMIGOS {derrotados}/{enemigos}    ";
-            if (monedas > 0) t += $"MONEDAS {recogidas}/{monedas}";
+            if (monedas > 0) t += $"RELIQUIAS {recogidas}/{monedas}";
             if (Time.time < mensajeHasta) t += "\n" + mensaje;
             hud.text = t;
 
@@ -255,6 +264,7 @@ namespace Forja3D
             textoAviso.rectTransform.offsetMin = new Vector2(0, 300); textoAviso.color = new Color(1f, 0.88f, 0.55f, 0);
 
             Forja3DTouchControls.Crear(canvasGo.transform);
+            gameObject.AddComponent<Forja3DPausa>().Crear(canvasGo.transform);
 
             panelFinal = new GameObject("PanelFinal", typeof(RectTransform), typeof(Image));
             panelFinal.transform.SetParent(canvasGo.transform, false);

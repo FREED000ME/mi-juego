@@ -37,7 +37,8 @@
       "comportamiento": "",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": false
+      "tras_jefe": false,
+      "descripcion": ""
     },
     {
       "simbolo": "J",
@@ -61,7 +62,33 @@
       "comportamiento": "",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": false
+      "tras_jefe": false,
+      "descripcion": "El juez del Infierno. Escucha la confesión de cada alma y enrosca la cola tantas veces como el círculo al que la manda."
+    },
+    {
+      "simbolo": "C",
+      "tipo": "moneda",
+      "modelo": "",
+      "vida": 2,
+      "escala": 1,
+      "color": "",
+      "nombre": "Laurel de Homero",
+      "seguir": false,
+      "dialogo": [],
+      "voz": "",
+      "aura": "",
+      "fantasma": false,
+      "clave": false,
+      "desvanecer": false,
+      "arma": "",
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": "",
+      "pisable": false,
+      "ancho": 0,
+      "tras_jefe": false,
+      "descripcion": "Hoja de la corona de los grandes poetas. En el Limbo recibieron a Dante como el sexto de su grupo."
     },
     {
       "simbolo": "V",
@@ -102,7 +129,8 @@
       "comportamiento": "",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": false
+      "tras_jefe": false,
+      "descripcion": "Poeta romano, autor de la Eneida. Beatriz lo envía desde el Limbo para guiar a Dante por el Infierno y el Purgatorio: es la razón humana."
     },
     {
       "simbolo": "H",
@@ -151,7 +179,8 @@
       "comportamiento": "",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": false
+      "tras_jefe": false,
+      "descripcion": "El poeta soberano, autor de la Ilíada y la Odisea. Vive en el Limbo con los grandes poetas de la Antigüedad."
     }
   ],
   "jugador": {

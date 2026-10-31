@@ -36,7 +36,8 @@
       "comportamiento": "",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": false
+      "tras_jefe": false,
+      "descripcion": ""
     },
     {
       "simbolo": "K",
@@ -60,7 +61,8 @@
       "comportamiento": "",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": false
+      "tras_jefe": false,
+      "descripcion": "El barquero del Aqueronte, demonio con ojos de brasa. Golpea con el remo a las almas que se demoran en subir a su barca."
     },
     {
       "simbolo": "V",
@@ -89,7 +91,8 @@
       "comportamiento": "",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": false
+      "tras_jefe": false,
+      "descripcion": "Poeta romano, autor de la Eneida. Beatriz lo envía desde el Limbo para guiar a Dante por el Infierno y el Purgatorio: es la razón humana."
     }
   ],
   "jugador": {

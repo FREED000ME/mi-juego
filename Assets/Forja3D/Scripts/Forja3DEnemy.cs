@@ -30,6 +30,7 @@ namespace Forja3D
         public string voz = "condenado";   // clips voz_<voz>, muerte_<voz>
         public string nombre = "";
 
+        [TextArea] public string descripcion; // para "Personajes" en la pausa (fieras y jefes)
         public static readonly List<Forja3DEnemy> Activos = new List<Forja3DEnemy>();
         // Ganchos para comportamientos especiales (Cerbero y sus tres cabezas)
         public event System.Action AlAtacar;
@@ -226,6 +227,7 @@ namespace Forja3D
         void Alertar()
         {
             if (estado != Estado.Patrulla) return;
+            if (!string.IsNullOrEmpty(descripcion)) Forja3DProgreso.ConocerPersonaje(nombre, descripcion);
             if (esJefe) agente.ResetPath();
             proximaRuta = 0f; // traza la ruta hacia Dante en este mismo cuadro
             // Solo los jefes se detienen a rugir; los demás echan a andar sin pausa
@@ -427,8 +429,20 @@ namespace Forja3D
             Destroy(m);
             if (bajo == float.MaxValue) return;
             float suelo = transform.position.y;
-            if (Physics.Raycast(transform.position + Vector3.up * 3f, Vector3.down, out var hit, 8f, ~0, QueryTriggerInteraction.Ignore)) suelo = hit.point.y;
+            float mejor = float.MinValue;
+            foreach (var hit in Physics.RaycastAll(transform.position + Vector3.up * 3f, Vector3.down, 8f, ~0, QueryTriggerInteraction.Ignore))
+                if (!hit.collider.transform.IsChildOf(transform) && !hit.collider.GetComponentInParent<Forja3DHealth>() && hit.point.y > mejor) mejor = hit.point.y;
+            if (mejor > float.MinValue) suelo = mejor;
             transform.position += Vector3.up * (suelo - bajo + 0.02f);
+        }
+
+        IEnumerator ApoyarTras(float espera)
+        {
+            yield return new WaitForSeconds(espera);
+            var antes = transform.position; Apoyar(); var despues = transform.position;
+            transform.position = antes;
+            for (float t = 0; t < 1f; t += Time.deltaTime / 0.3f) { transform.position = Vector3.Lerp(antes, despues, t); yield return null; }
+            transform.position = despues;
         }
 
         IEnumerator Caida()
@@ -481,6 +495,7 @@ namespace Forja3D
             // (las fieras de Tripo solo traen "caminar": sin esto seguían andando en el sitio al morir)
             bool clipMuerte = anim && anim.HasState(0, Animator.StringToHash("Muerte"));
             if (!clipMuerte) { if (anim) anim.enabled = false; StartCoroutine(Caida()); }
+            else StartCoroutine(ApoyarTras(1.3f)); // el clip de muerte deja el cuerpo un poco en el aire: se baja al suelo
             if (esJefe)
             {
                 // Derrota del jefe: cámara lenta, temblor y el cuerpo queda en el suelo

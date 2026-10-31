@@ -3,18 +3,43 @@
   "celda": 3,
   "mapa": [
     "####################",
-    "#~~~~~~~~~~~~~~~~~~#",
-    "#~~~~~~~~~~~~~~~~~~#",
-    "#.PV...I.....A.I...#",
-    "#.....I....I.......#",
-    "#........B...G....M#",
-    "#......I......I....#",
-    "#....I.......I.....#",
-    "#~~~~~~~~~~~~~~~~~~#",
-    "#~~~~~~~~~~~~~~~~~~#",
+    "#~~~H~~~~~~H~~~~~~~#",
+    "#~~~~~~H~~~~~~~~H~~#",
+    "#~PV...I.....A.I.~~#",
+    "#~....I....I.....~~#",
+    "#~.......B...G..M~H#",
+    "#~.....I......I..~~#",
+    "#~...I.......I...~~#",
+    "#~~H~~~~~~~~~H~~~~~#",
+    "#~~~~~~~~H~~~~~~~~H#",
     "####################"
   ],
   "leyenda": [
+    {
+      "simbolo": "H",
+      "tipo": "ahogado",
+      "modelo": "condenado",
+      "vida": 2,
+      "escala": 1,
+      "color": "",
+      "nombre": "",
+      "seguir": false,
+      "dialogo": [],
+      "voz": "",
+      "aura": "",
+      "fantasma": false,
+      "clave": false,
+      "desvanecer": false,
+      "arma": "",
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": "",
+      "pisable": false,
+      "ancho": 0,
+      "tras_jefe": false,
+      "descripcion": ""
+    },
     {
       "simbolo": "I",
       "tipo": "enemigo",
@@ -37,7 +62,8 @@
       "comportamiento": "",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": false
+      "tras_jefe": false,
+      "descripcion": ""
     },
     {
       "simbolo": "G",
@@ -61,7 +87,8 @@
       "comportamiento": "",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": false
+      "tras_jefe": false,
+      "descripcion": "Barquero de la Estigia. En el mito, rey que incendió el templo de Apolo por ira. Lleva a Dante hasta Dite."
     },
     {
       "simbolo": "B",
@@ -85,7 +112,8 @@
       "comportamiento": "",
       "pisable": true,
       "ancho": 5,
-      "tras_jefe": false
+      "tras_jefe": false,
+      "descripcion": ""
     },
     {
       "simbolo": "V",
@@ -118,7 +146,8 @@
       "comportamiento": "",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": false
+      "tras_jefe": false,
+      "descripcion": "Poeta romano, autor de la Eneida. Beatriz lo envía desde el Limbo para guiar a Dante por el Infierno y el Purgatorio: es la razón humana."
     },
     {
       "simbolo": "A",
@@ -171,7 +200,8 @@
       "comportamiento": "",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": true
+      "tras_jefe": true,
+      "descripcion": "Noble florentino iracundo, enemigo de Dante. Los demás iracundos lo despedazan en el fango."
     }
   ],
   "jugador": {
@@ -195,11 +225,11 @@
     },
     {
       "quien": "Consejo",
-      "texto": "Peleas sobre la barca de Flegias: a cada lado, el agua negra de la Estigia. Los iracundos trepan por la borda."
+      "texto": "Peleas sobre la barca de Flegias, rodeada por el fango de la Estigia. Si caes al agua, los condenados te arrastran al fondo."
     },
     {
       "quien": "Consejo",
-      "texto": "Vence a Flegias y escucha al alma que suba a bordo: entonces la barca llegará a la orilla de Dite."
+      "texto": "Vence a Flegias y escucha al alma que suba a bordo: la barca encallará en Dite y su puerta surgirá sobre la cubierta."
     }
   ],
   "salida": [

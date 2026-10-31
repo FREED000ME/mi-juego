@@ -37,7 +37,8 @@
       "comportamiento": "",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": false
+      "tras_jefe": false,
+      "descripcion": ""
     },
     {
       "simbolo": "J",
@@ -61,7 +62,8 @@
       "comportamiento": "pluto",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": false
+      "tras_jefe": false,
+      "descripcion": "El demonio de la riqueza, guardián del cuarto círculo. Grita palabras que nadie ha logrado descifrar."
     },
     {
       "simbolo": "F",
@@ -85,7 +87,8 @@
       "comportamiento": "",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": false
+      "tras_jefe": false,
+      "descripcion": ""
     },
     {
       "simbolo": "O",
@@ -109,7 +112,8 @@
       "comportamiento": "",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": false
+      "tras_jefe": false,
+      "descripcion": ""
     },
     {
       "simbolo": "Q",
@@ -133,7 +137,8 @@
       "comportamiento": "",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": false
+      "tras_jefe": false,
+      "descripcion": ""
     },
     {
       "simbolo": "V",
@@ -166,7 +171,8 @@
       "comportamiento": "",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": false
+      "tras_jefe": false,
+      "descripcion": "Poeta romano, autor de la Eneida. Beatriz lo envía desde el Limbo para guiar a Dante por el Infierno y el Purgatorio: es la razón humana."
     }
   ],
   "jugador": {

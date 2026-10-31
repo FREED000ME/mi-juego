@@ -118,13 +118,23 @@ namespace Forja3D
         }
 
         static bool primeraRoca = true;
-        public static Forja3DProyectil Roca(Vector3 desde, Vector3 dir, float radio)
+        // plantilla: el peñasco del escenario recoloreado en oro (ya centrado y de 1 m de diámetro); si falta, una esfera
+        public static Forja3DProyectil Roca(Vector3 desde, Vector3 dir, float radio, GameObject plantilla = null)
         {
             if (primeraRoca) { primeraRoca = false; Debug.Log("[Forja3D] Primera roca rodante"); }
-            var g = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            Object.Destroy(g.GetComponent<Collider>());
-            g.name = "RocaRodante"; g.transform.position = desde + Vector3.up * radio; g.transform.localScale = Vector3.one * radio * 2f;
-            var r = g.GetComponent<Renderer>(); r.sharedMaterial = Piedra(r.sharedMaterial);
+            GameObject g;
+            if (plantilla)
+            {
+                g = Object.Instantiate(plantilla); g.SetActive(true); g.name = "RocaRodante";
+                g.transform.position = desde + Vector3.up * radio; g.transform.localScale = Vector3.one * radio * 2f;
+            }
+            else
+            {
+                g = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                Object.Destroy(g.GetComponent<Collider>());
+                g.name = "RocaRodante"; g.transform.position = desde + Vector3.up * radio; g.transform.localScale = Vector3.one * radio * 2f;
+                var r = g.GetComponent<Renderer>(); r.sharedMaterial = Piedra(r.sharedMaterial);
+            }
             var p = g.AddComponent<Forja3DProyectil>();
             p.direccion = dir; p.velocidad = 4.2f; p.danio = 2; p.radio = radio; p.vida = 14f; p.rueda = true; p.danioDevuelto = 4;
             return p;

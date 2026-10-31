@@ -10,7 +10,7 @@
     "#...T.....T..E.##..#",
     "#..##..T..L...T....#",
     "#..##.....E.....T..#",
-    "#.T....T....C..W.T.#",
+    "#.T....T....D..W.T.#",
     "#....T....T.....VTM#",
     "####################"
   ],
@@ -37,7 +37,58 @@
       "comportamiento": "",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": false
+      "tras_jefe": false,
+      "descripcion": ""
+    },
+    {
+      "simbolo": "C",
+      "tipo": "moneda",
+      "modelo": "",
+      "vida": 2,
+      "escala": 1,
+      "color": "",
+      "nombre": "Rama de la selva oscura",
+      "seguir": false,
+      "dialogo": [],
+      "voz": "",
+      "aura": "",
+      "fantasma": false,
+      "clave": false,
+      "desvanecer": false,
+      "arma": "",
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": "",
+      "pisable": false,
+      "ancho": 0,
+      "tras_jefe": false,
+      "descripcion": "Una rama retorcida de la selva donde Dante se perdió a mitad del camino de la vida."
+    },
+    {
+      "simbolo": "D",
+      "tipo": "moneda",
+      "modelo": "",
+      "vida": 2,
+      "escala": 1,
+      "color": "",
+      "nombre": "Rayo del monte",
+      "seguir": false,
+      "dialogo": [],
+      "voz": "",
+      "aura": "",
+      "fantasma": false,
+      "clave": false,
+      "desvanecer": false,
+      "arma": "",
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": "",
+      "pisable": false,
+      "ancho": 0,
+      "tras_jefe": false,
+      "descripcion": "Un destello del sol sobre el monte que Dante quiso subir: la esperanza que las tres fieras le cerraron."
     },
     {
       "simbolo": "A",
@@ -61,7 +112,8 @@
       "comportamiento": "",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": false
+      "tras_jefe": false,
+      "descripcion": "La fiera ágil de piel manchada que cierra el paso del monte. Los comentaristas la leen como la lujuria o el fraude."
     },
     {
       "simbolo": "L",
@@ -85,7 +137,8 @@
       "comportamiento": "",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": false
+      "tras_jefe": false,
+      "descripcion": "Fiera de cabeza alta y hambre rabiosa, que hasta el aire parece temer. Representa la soberbia."
     },
     {
       "simbolo": "W",
@@ -109,7 +162,8 @@
       "comportamiento": "",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": false
+      "tras_jefe": false,
+      "descripcion": "Flaca y cargada de todos los deseos; la más temible de las tres fieras. Representa la avaricia, que nunca se sacia."
     },
     {
       "simbolo": "V",
@@ -158,7 +212,8 @@
       "comportamiento": "",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": false
+      "tras_jefe": false,
+      "descripcion": "Poeta romano, autor de la Eneida. Beatriz lo envía desde el Limbo para guiar a Dante por el Infierno y el Purgatorio: es la razón humana."
     }
   ],
   "jugador": {

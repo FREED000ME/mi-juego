@@ -9,13 +9,14 @@ namespace Forja3D
     {
         public Vector3 direccion = Vector3.right;
         public float periodo = 5f, radio = 1.1f;
+        public GameObject plantilla; // peñasco dorado (apagado) que se copia en cada lanzamiento
         float proxima;
         void Start() => proxima = Time.time + Random.Range(0.5f, periodo);
         void Update()
         {
             if (Forja3DGameManager.Bloqueado || Time.time < proxima) return;
             proxima = Time.time + periodo * Random.Range(0.85f, 1.15f);
-            Forja3DProyectil.Roca(transform.position, direccion, radio);
+            Forja3DProyectil.Roca(transform.position, direccion, radio, plantilla);
         }
     }
 }

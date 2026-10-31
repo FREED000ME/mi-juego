@@ -14,7 +14,7 @@ using UnityEngine.SceneManagement;
 
 namespace Forja3D.EditorTools
 {
-    [Serializable] public class Simbolo { public string simbolo; public string tipo; public string modelo; public int vida = 2; public float escala = 1f; public string color; public string nombre; public bool seguir; public Linea[] dialogo; public string voz; public string aura; public bool fantasma; public bool clave; public bool desvanecer; public string arma; public int cabezas; public string direccion = "este"; public float periodo = 5f; public string comportamiento; public bool pisable; public bool tras_jefe; public int ancho; }
+    [Serializable] public class Simbolo { public string simbolo; public string tipo; public string modelo; public int vida = 2; public float escala = 1f; public string color; public string nombre; public bool seguir; public Linea[] dialogo; public string voz; public string aura; public bool fantasma; public bool clave; public bool desvanecer; public string arma; public int cabezas; public string direccion = "este"; public float periodo = 5f; public string comportamiento; public bool pisable; public bool tras_jefe; public int ancho; public string descripcion; }
     [Serializable] public class JugadorDef { public string modelo; public int vida = 5; public string arma; public bool cuerda; }
     [Serializable]
     public class JuegoDef
@@ -200,15 +200,17 @@ namespace Forja3D.EditorTools
             for (int f = 0; f < filas; f++)
                 for (int col = 0; col < cols; col++)
                 {
-                    if (Tipo(n, leyenda, f, col) != "rio") continue;
+                    if (!EsAgua(Tipo(n, leyenda, f, col))) continue;
                     int fin = col;
-                    while (fin + 1 < cols && Tipo(n, leyenda, f, fin + 1) == "rio") fin++;
+                    while (fin + 1 < cols && EsAgua(Tipo(n, leyenda, f, fin + 1))) fin++;
                     var centro = (Pos(f, col) + Pos(f, fin)) / 2f;
                     float largoRio = (fin - col + 1) * c;
-                    var bloqueo = new GameObject("RioColision"); bloqueo.transform.SetParent(nivel.transform);
-                    bloqueo.transform.position = new Vector3(centro.x, 1.5f, centro.z);
-                    bloqueo.AddComponent<BoxCollider>().size = new Vector3(largoRio, 4f, c);
-                    GameObjectUtility.SetStaticEditorFlags(bloqueo, StaticEditorFlags.NavigationStatic);
+                    // El agua no frena: mata (Dante cae y se hunde). El NavMesh la excluye para que nadie la pise a propósito
+                    var bloqueo = new GameObject("RioMortal"); bloqueo.transform.SetParent(nivel.transform);
+                    bloqueo.transform.position = new Vector3(centro.x, centro.y + 0.4f, centro.z);
+                    var bt = bloqueo.AddComponent<BoxCollider>(); bt.isTrigger = true; bt.size = new Vector3(largoRio, 1.6f, c * 0.92f);
+                    bloqueo.AddComponent<Forja3DAguaMortal>().fuego = string.IsNullOrEmpty(n.color_rio);
+                    var vol = bloqueo.AddComponent<NavMeshModifierVolume>(); vol.size = new Vector3(largoRio + 0.4f, 6f, c + 0.4f); vol.center = Vector3.zero; vol.area = 1; // Not Walkable
                     if (!matRio)
                     {
                         matRio = new Material(Shader.Find("Standard"));
@@ -253,12 +255,6 @@ namespace Forja3D.EditorTools
                     p.y = terreno.SampleHeight(p) - 0.6f;
                     float tam = c * (1.3f + (float)rnd.NextDouble() * 0.25f);
                     Roca(rocas[rnd.Next(rocas.Length)], matRoca, p, new Vector3(tam, n.altura_muros * (1.0f + (float)rnd.NextDouble() * 0.45f), tam), rnd, grupoRocas, false);
-                    if (rnd.NextDouble() < 0.45)
-                    {
-                        float t2 = c * (0.6f + (float)rnd.NextDouble() * 0.3f);
-                        var p2 = p + new Vector3((float)(rnd.NextDouble() - 0.5) * c * 0.8f, n.altura_muros * 0.55f, (float)(rnd.NextDouble() - 0.5) * c * 0.5f);
-                        Roca(rocas[rnd.Next(rocas.Length)], matRoca, p2, new Vector3(t2, t2 * 0.8f, t2), rnd, grupoRocas, false);
-                    }
                 }
 
             // Paisaje fuera de la zona de juego: árboles muertos y peñascos en las colinas
@@ -337,16 +333,7 @@ namespace Forja3D.EditorTools
                     tablas.transform.localScale = new Vector3(L, 0.1f, W);
                     var matT = MatTablas(id, new Vector2(L / 2.4f, W / 2.4f));
                     tablas.GetComponent<Renderer>().sharedMaterial = matT;
-                    // Bordas: no se sale de la barca (colisiones invisibles, fuera del NavMesh)
-                    void Borde(string nombre, Vector3 pos, Vector3 tam)
-                    {
-                        var bo = new GameObject(nombre); bo.transform.SetParent(raizB.transform); bo.transform.position = pos;
-                        bo.AddComponent<BoxCollider>().size = tam;
-                    }
-                    Borde("BordaIzq", centroB + new Vector3(0, 2f, W / 2f + 0.3f), new Vector3(L + 1f, 5f, 0.6f));
-                    Borde("BordaDer", centroB + new Vector3(0, 2f, -W / 2f - 0.3f), new Vector3(L + 1f, 5f, 0.6f));
-                    Borde("Popa", centroB + new Vector3(-L / 2f - 0.3f, 2f, 0), new Vector3(0.6f, 5f, W + 1f));
-                    Borde("ProaBarrera", centroB + new Vector3(L / 2f + 0.3f, 2f, 0), new Vector3(0.6f, 5f, W + 1f)); // cae al encallar
+                    // Sin bordas invisibles: la barca está rodeada de agua y quien salta al pantano se ahoga
                     raizB.AddComponent<Forja3DBarca>();
                 }
 
@@ -364,7 +351,19 @@ namespace Forja3D.EditorTools
                         case "enemigo": Enemigo(s, p, dinamicos, id, false); break;
                         case "jefe": Enemigo(s, p, dinamicos, id, true); break;
                         case "npc": Npc(s, p, dinamicos, id); break;
-                        case "moneda": Moneda(p, dinamicos, id); break;
+                        case "moneda": Moneda(s, p, dinamicos, id); break;
+                        case "ahogado":
+                        {
+                            // Condenado que se ahoga en la laguna (decoración animada, sin colisión)
+                            var ah = InstanciarModelo(string.IsNullOrEmpty(s.modelo) ? "condenado" : s.modelo);
+                            if (!ah) break;
+                            AjustarAltura(ah, 1.75f);
+                            foreach (var cc2 in ah.GetComponentsInChildren<Collider>()) UnityEngine.Object.DestroyImmediate(cc2);
+                            foreach (var mb in ah.GetComponentsInChildren<MonoBehaviour>()) UnityEngine.Object.DestroyImmediate(mb);
+                            ah.name = "Ahogado"; ah.transform.SetParent(dinamicos); ah.transform.position = p + Vector3.down * 1.05f;
+                            ah.AddComponent<Forja3DAhogado>();
+                            break;
+                        }
                         case "rodante":
                         {
                             // Avaros y pródigos: de aquí salen rocas que ruedan en la dirección indicada
@@ -372,6 +371,7 @@ namespace Forja3D.EditorTools
                             lr.transform.SetParent(dinamicos); lr.transform.position = p;
                             lr.direccion = s.direccion == "oeste" ? Vector3.left : s.direccion == "norte" ? Vector3.forward : s.direccion == "sur" ? Vector3.back : Vector3.right;
                             lr.periodo = s.periodo > 0 ? s.periodo : 5f; lr.radio = Mathf.Min(1.4f, c * 0.38f);
+                            lr.plantilla = RocaDorada(id, lr.transform);
                             break;
                         }
                         case "meta": meta = p; break;
@@ -419,6 +419,7 @@ namespace Forja3D.EditorTools
             return l.TryGetValue(ch, out var s) ? s : null;
         }
         static string Tipo(Nivel n, Dictionary<char, Simbolo> l, int f, int col) => Sim(n, l, f, col)?.tipo;
+        static bool EsAgua(string t) => t == "rio" || t == "ahogado";
 
         // ---------- Terreno: plano en la zona jugable, colinas alrededor ----------
         static Terrain CrearTerreno(Nivel n, string id, int filas, int cols, float c, bool[,] esMuro, Transform padre)
@@ -1004,7 +1005,7 @@ namespace Forja3D.EditorTools
             var ag = g.AddComponent<NavMeshAgent>(); ag.height = alto; ag.radius = radio;
             var h = g.AddComponent<Forja3DHealth>(); h.vidaMaxima = Mathf.Max(1, s.vida);
             var e = g.AddComponent<Forja3DEnemy>();
-            e.nombre = s.nombre ?? "";
+            e.nombre = s.nombre ?? ""; e.descripcion = s.descripcion ?? "";
             string m = (s.modelo ?? "").ToLowerInvariant();
             bool fiera = m.Contains("pantera") || m.Contains("leon") || m.Contains("lob") || m.Contains("perro") || m.Contains("cerbero");
             e.voz = !string.IsNullOrEmpty(s.voz) ? s.voz : fiera ? "fiera" : jefe ? "jefe" : "condenado";
@@ -1209,7 +1210,7 @@ namespace Forja3D.EditorTools
             else { var col = g.AddComponent<CapsuleCollider>(); col.height = alto; col.radius = radio; col.center = Vector3.up * alto / 2f; }
             if (s.seguir) { var ag = g.AddComponent<NavMeshAgent>(); ag.height = alto; ag.radius = radio; ag.speed = 3.2f; ag.stoppingDistance = 2f; }
             var npc = g.AddComponent<Forja3DNPC>();
-            npc.nombre = s.nombre ?? ""; npc.dialogo = s.dialogo; npc.seguir = s.seguir; npc.clave = s.clave; npc.desvanecer = s.desvanecer;
+            npc.nombre = s.nombre ?? ""; npc.descripcion = s.descripcion ?? ""; npc.dialogo = s.dialogo; npc.seguir = s.seguir; npc.clave = s.clave; npc.desvanecer = s.desvanecer;
             if (s.clave || s.desvanecer) npc.distancia = 4f;
             // Aparece al caer el último jefe (Filippo Argenti trepa a la barca cuando cae Flegias)
             if (s.tras_jefe)
@@ -1221,17 +1222,23 @@ namespace Forja3D.EditorTools
             }
         }
 
-        static void Moneda(Vector3 p, Transform padre, string id)
+        // Reliquia (símbolo de tipo "moneda"): un relicario dorado que flota y brilla; "nombre" y "descripcion" del mapa
+        static void Moneda(Simbolo s, Vector3 p, Transform padre, string id)
         {
-            var g = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            g.name = "Moneda"; g.transform.SetParent(padre);
-            g.transform.position = p + Vector3.up; g.transform.rotation = Quaternion.Euler(90, 0, 0);
-            g.transform.localScale = new Vector3(0.7f, 0.06f, 0.7f);
-            var m = Mat("moneda", new Color(1f, 0.82f, 0.15f)); m.EnableKeyword("_EMISSION"); m.SetColor("_EmissionColor", new Color(0.5f, 0.35f, 0f));
-            g.GetComponent<Renderer>().sharedMaterial = m;
-            UnityEngine.Object.DestroyImmediate(g.GetComponent<Collider>());
-            var t = g.AddComponent<SphereCollider>(); t.isTrigger = true; t.radius = 1.2f;
-            g.AddComponent<Forja3DCollectible>();
+            var g = new GameObject("Reliquia"); g.transform.SetParent(padre); g.transform.position = p + Vector3.up * 1.1f;
+            var m = Mat("reliquia", new Color(1f, 0.82f, 0.35f)); m.EnableKeyword("_EMISSION"); m.SetColor("_EmissionColor", new Color(0.55f, 0.38f, 0.08f));
+            // Relicario: una gema (cubo de canto) sobre un pie
+            var gema = GameObject.CreatePrimitive(PrimitiveType.Cube); gema.transform.SetParent(g.transform, false);
+            gema.transform.localScale = Vector3.one * 0.38f; gema.transform.localRotation = Quaternion.Euler(45, 0, 45);
+            var pie = GameObject.CreatePrimitive(PrimitiveType.Cylinder); pie.transform.SetParent(g.transform, false);
+            pie.transform.localScale = new Vector3(0.22f, 0.12f, 0.22f); pie.transform.localPosition = Vector3.down * 0.38f;
+            foreach (var r in g.GetComponentsInChildren<Renderer>()) r.sharedMaterial = m;
+            foreach (var col in g.GetComponentsInChildren<Collider>()) UnityEngine.Object.DestroyImmediate(col);
+            var luz = new GameObject("Brillo").AddComponent<Light>(); luz.transform.SetParent(g.transform, false);
+            luz.type = LightType.Point; luz.color = new Color(1f, 0.8f, 0.4f); luz.range = 4f; luz.intensity = 1.6f;
+            var t = g.AddComponent<SphereCollider>(); t.isTrigger = true; t.radius = 1.3f;
+            var r2 = g.AddComponent<Forja3DCollectible>();
+            r2.nombre = string.IsNullOrEmpty(s.nombre) ? "Reliquia" : s.nombre; r2.descripcion = s.descripcion ?? "";
         }
 
         // Meta: la Puerta (modelo "puerta") con un resplandor; sin modelo, un arco de roca procedural
@@ -1256,7 +1263,7 @@ namespace Forja3D.EditorTools
                 var farol = new GameObject("Farol").AddComponent<Light>();
                 farol.transform.SetParent(gm.transform, false); farol.transform.localPosition = Vector3.up * 2.2f;
                 farol.type = LightType.Point; farol.color = new Color(1f, 0.55f, 0.25f); farol.range = 8f; farol.intensity = 1.8f;
-                gm.AddComponent<Forja3DGoal>();
+                gm.AddComponent<Forja3DGoal>().modo = "navegar"; // la barca llega por el río al cumplir el objetivo
                 return;
             }
             var g = new GameObject("Meta"); g.transform.SetParent(padre); g.transform.position = p;
@@ -1372,6 +1379,9 @@ namespace Forja3D.EditorTools
                 float lado = Mathf.Max(b.size.x, b.size.z, 0.01f);
                 g.transform.localScale *= c * 0.9f / lado * Mathf.Max(0.2f, s.escala);
                 var b2 = Forja3DImporter.Limites(g); g.transform.position -= new Vector3(b2.center.x, b2.min.y, b2.center.z);
+                // Colisión ajustada a la malla (rocas y decoración sólida): no se atraviesan
+                foreach (var cc in g.GetComponentsInChildren<Collider>()) UnityEngine.Object.DestroyImmediate(cc);
+                foreach (var mf in g.GetComponentsInChildren<MeshFilter>()) if (mf.sharedMesh) mf.gameObject.AddComponent<MeshCollider>().sharedMesh = mf.sharedMesh;
                 var envoltura = new GameObject(s.tipo == "roca" ? "Roca" : "Decoracion"); g.transform.SetParent(envoltura.transform, true);
                 return envoltura;
             }
@@ -1419,8 +1429,12 @@ namespace Forja3D.EditorTools
                 var fila = mapa[f].PadRight(cols, ' ').ToCharArray();
                 for (int col = 0; col < cols; col++)
                     if ((f == 0 || f == filas - 1 || col == 0 || col == cols - 1) && fila[col] == '#') fila[col] = CharZona; // el marco de muros desaparece
-                var z = new string(CharZona, k);
-                res.Add(z + new string(fila) + z);
+                // Un río que llega al marco sigue por la zona muerta hasta el límite (no se corta)
+                bool rioIzq = fila[0] == CharZona && cols > 1 && fila[1] == '~';
+                bool rioDer = fila[cols - 1] == CharZona && cols > 1 && fila[cols - 2] == '~';
+                if (rioIzq) fila[0] = '~';
+                if (rioDer) fila[cols - 1] = '~';
+                res.Add(new string(rioIzq ? '~' : CharZona, k) + new string(fila) + new string(rioDer ? '~' : CharZona, k));
             }
             for (int i = 0; i < k; i++) res.Add(vacia);
             return res.ToArray();
@@ -1595,6 +1609,70 @@ namespace Forja3D.EditorTools
             var m = new Material(Shader.Find("Standard")) { mainTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(ruta), mainTextureScale = repeticion };
             m.SetFloat("_Glossiness", 0.15f);
             Guardar(m, $"tablas_{id}");
+            return m;
+        }
+
+        // Peñasco del escenario (modelo "roca") con sus vetas recoloreadas en oro, centrado y de 1 m: plantilla de las
+        // rocas que empujan los avaros. Sin modelo "roca" devuelve null (se usa una esfera con vetas de oro).
+        static GameObject RocaDorada(string id, Transform padre)
+        {
+            var mod = InstanciarModelo("roca");
+            if (!mod) return null;
+            foreach (var cc in mod.GetComponentsInChildren<Collider>()) UnityEngine.Object.DestroyImmediate(cc);
+            var raiz = new GameObject("RocaDoradaPlantilla");
+            var b = Forja3DImporter.Limites(mod);
+            mod.transform.SetParent(raiz.transform, true);
+            mod.transform.position -= b.center; // centrada: rueda sobre su centro
+            float lado = Mathf.Max(b.size.x, b.size.y, b.size.z, 0.01f);
+            mod.transform.localScale /= lado; mod.transform.localPosition /= lado;
+            foreach (var r in mod.GetComponentsInChildren<Renderer>())
+            {
+                var mats = r.sharedMaterials;
+                for (int i = 0; i < mats.Length; i++) if (mats[i]) mats[i] = MaterialDorado(mats[i], id);
+                r.sharedMaterials = mats;
+            }
+            raiz.transform.SetParent(padre, false);
+            raiz.SetActive(false);
+            return raiz;
+        }
+
+        static readonly Dictionary<string, Material> doradoCache = new Dictionary<string, Material>();
+        static Material MaterialDorado(Material original, string id)
+        {
+            string clave = id + "_" + original.name;
+            if (doradoCache.TryGetValue(clave, out var hecho) && hecho) return hecho;
+            var m = new Material(original) { name = original.name + "_oro" };
+            var tex = original.mainTexture as Texture2D;
+            string rutaTex = tex ? AssetDatabase.GetAssetPath(tex) : null;
+            if (!string.IsNullOrEmpty(rutaTex) && File.Exists(rutaTex))
+            {
+                var t = new Texture2D(2, 2);
+                if (t.LoadImage(File.ReadAllBytes(rutaTex)))
+                {
+                    var px = t.GetPixels32();
+                    for (int i = 0; i < px.Length; i++)
+                    {
+                        var c = px[i];
+                        // Las vetas de lava (rojas) pasan a oro; la piedra se queda como está
+                        if (c.r > 60 && c.r > c.g * 1.35f && c.r > c.b * 1.35f)
+                        {
+                            float l = Mathf.Min(255f, c.r * 1.15f);
+                            px[i] = new Color32((byte)l, (byte)(l * 0.78f), (byte)(l * 0.24f), c.a);
+                        }
+                    }
+                    t.SetPixels32(px); t.Apply();
+                    string ruta = $"{RutaGenerado}/Datos/roca_oro_{id}_{doradoCache.Count}.png";
+                    File.WriteAllBytes(ruta, t.EncodeToPNG());
+                    UnityEngine.Object.DestroyImmediate(t);
+                    AssetDatabase.ImportAsset(ruta, ImportAssetOptions.ForceSynchronousImport);
+                    if (AssetImporter.GetAtPath(ruta) is TextureImporter ti) { ti.maxTextureSize = 1024; ti.SaveAndReimport(); }
+                    m.mainTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(ruta);
+                }
+            }
+            else m.color = new Color(1f, 0.8f, 0.3f);
+            if (m.HasProperty("_EmissionColor")) { m.EnableKeyword("_EMISSION"); m.SetColor("_EmissionColor", new Color(0.18f, 0.12f, 0.02f)); }
+            Guardar(m, $"roca_oro_{id}_{doradoCache.Count}");
+            doradoCache[clave] = m;
             return m;
         }
 

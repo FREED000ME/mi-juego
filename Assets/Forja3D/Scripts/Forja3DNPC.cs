@@ -8,6 +8,7 @@ namespace Forja3D
     public class Forja3DNPC : MonoBehaviour
     {
         public string nombre = "";
+        [TextArea] public string descripcion; // se guarda en "Personajes" al hablar con él
         public Linea[] dialogo;
         public bool repetir = false;
         public bool seguir = false;
@@ -54,6 +55,7 @@ namespace Forja3D
             {
                 hablado = !repetir;
                 Forja3DAnim.Trigger(anim, "Alert");
+                if (!string.IsNullOrEmpty(descripcion)) Forja3DProgreso.ConocerPersonaje(nombre, descripcion);
                 Forja3DDialogue.Mostrar(dialogo, () =>
                 {
                     if (clave && !contado) { contado = true; Forja3DGameManager.ClaveOida(); }

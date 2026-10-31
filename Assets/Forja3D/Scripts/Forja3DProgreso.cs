@@ -5,6 +5,7 @@
 // EXPANSIÓN FUTURA: en PC/iOS el mismo guardado funciona; para nube (Google Play Games / iCloud)
 // bastaría con serializar este estado en JSON y subirlo.
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Forja3D
@@ -41,6 +42,29 @@ namespace Forja3D
             PlayerPrefs.SetInt("f3d_economia", 2);
             PlayerPrefs.Save();
         }
+        // ── Reliquias y personajes conocidos (se ven en la pausa) ──
+        // Cada registro: nombre ⟂ descripción, en una lista separada por "\n" (PlayerPrefs no guarda listas)
+        static List<(string n, string d)> Lista(string clave)
+        {
+            var r = new List<(string, string)>();
+            foreach (var l in PlayerPrefs.GetString(clave, "").Split('\n'))
+            { var p = l.Split('\u27C2'); if (p.Length == 2 && p[0].Length > 0) r.Add((p[0], p[1])); }
+            return r;
+        }
+        static void Agregar(string clave, string nombre, string desc)
+        {
+            if (string.IsNullOrEmpty(nombre)) return;
+            var l = Lista(clave);
+            foreach (var e in l) if (e.n == nombre) return;
+            l.Add((nombre, (desc ?? "").Replace('\n', ' ')));
+            var partes = new List<string>(); foreach (var e in l) partes.Add(e.n + "\u27C2" + e.d);
+            PlayerPrefs.SetString(clave, string.Join("\n", partes)); PlayerPrefs.Save();
+        }
+        public static List<(string n, string d)> Reliquias => Lista("f3d_reliquias");
+        public static List<(string n, string d)> Personajes => Lista("f3d_personajes");
+        public static void GuardarReliquia(string nombre, string desc) => Agregar("f3d_reliquias", nombre, desc);
+        public static void ConocerPersonaje(string nombre, string desc) => Agregar("f3d_personajes", nombre, desc);
+
         public static int Costo(int rama) => Grado(rama) + 1; // 1, 2 y 3 puntos
 
         // Al caer: se pierde lo ganado en este intento. Si ya se gastó en virtudes, se conservan,

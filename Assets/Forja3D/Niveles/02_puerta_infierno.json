@@ -37,7 +37,8 @@
       "comportamiento": "",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": false
+      "tras_jefe": false,
+      "descripcion": ""
     },
     {
       "simbolo": "J",
@@ -61,7 +62,33 @@
       "comportamiento": "",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": false
+      "tras_jefe": false,
+      "descripcion": "Guardiana de la puerta del Infierno en este juego. Al vencerla, Dante toma su hoz."
+    },
+    {
+      "simbolo": "C",
+      "tipo": "moneda",
+      "modelo": "",
+      "vida": 2,
+      "escala": 1,
+      "color": "",
+      "nombre": "Piedra de la inscripción",
+      "seguir": false,
+      "dialogo": [],
+      "voz": "",
+      "aura": "",
+      "fantasma": false,
+      "clave": false,
+      "desvanecer": false,
+      "arma": "",
+      "cabezas": 0,
+      "direccion": "este",
+      "periodo": 5,
+      "comportamiento": "",
+      "pisable": false,
+      "ancho": 0,
+      "tras_jefe": false,
+      "descripcion": "Fragmento de la puerta del Infierno con letras oscuras: «Abandonad toda esperanza, vosotros que entráis»."
     },
     {
       "simbolo": "V",
@@ -94,7 +121,8 @@
       "comportamiento": "",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": false
+      "tras_jefe": false,
+      "descripcion": "Poeta romano, autor de la Eneida. Beatriz lo envía desde el Limbo para guiar a Dante por el Infierno y el Purgatorio: es la razón humana."
     }
   ],
   "jugador": {

@@ -37,7 +37,8 @@
       "comportamiento": "",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": false
+      "tras_jefe": false,
+      "descripcion": ""
     },
     {
       "simbolo": "K",
@@ -61,7 +62,8 @@
       "comportamiento": "",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": false
+      "tras_jefe": false,
+      "descripcion": "La fiera de tres cabezas que ladra y desgarra a los glotones bajo la lluvia eterna del tercer círculo."
     },
     {
       "simbolo": "V",
@@ -90,7 +92,8 @@
       "comportamiento": "",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": false
+      "tras_jefe": false,
+      "descripcion": "Poeta romano, autor de la Eneida. Beatriz lo envía desde el Limbo para guiar a Dante por el Infierno y el Purgatorio: es la razón humana."
     },
     {
       "simbolo": "A",
@@ -143,7 +146,8 @@
       "comportamiento": "",
       "pisable": false,
       "ancho": 0,
-      "tras_jefe": false
+      "tras_jefe": false,
+      "descripcion": "Florentino glotón de la época de Dante. Le profetiza las luchas entre bandos que ensangrentarán Florencia."
     }
   ],
   "jugador": {

@@ -47,6 +47,13 @@ namespace Forja3D
             return true;
         }
 
+        // Muerte segura (caer al agua): no la para la invulnerabilidad tras un golpe
+        public void Matar()
+        {
+            if (Muerto) return;
+            Vida = 0; Forja3DAnim.Bool(anim, "Dead", true); AlMorir?.Invoke();
+        }
+
         public void Curar(int cantidad) { if (!Muerto) Vida = Mathf.Min(vidaMaxima, Vida + cantidad); }
     }
 
