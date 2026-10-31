@@ -44,6 +44,7 @@ namespace Forja3D
             Forja3DFX.Polvo(proa, 4f); Forja3DFX.Polvo(transform.position, 3f);
             Forja3DAudio.Sonar("guardia_rota", transform.position, 1f, 0.05f, 0.5f);
             Forja3DGameManager.Mensaje("¡LA BARCA ENCALLA EN LA ORILLA DE DITE!");
+            var proaB = transform.Find("ProaBarrera"); if (proaB) proaB.gameObject.SetActive(false); // ya se puede bajar a tierra
             Debug.Log("[Forja3D] La barca encalla: salida abierta");
         }
     }

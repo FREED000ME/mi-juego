@@ -34,6 +34,7 @@
       "periodo": 5,
       "comportamiento": "",
       "pisable": false,
+      "ancho": 0,
       "tras_jefe": false
     },
     {
@@ -62,6 +63,7 @@
       "periodo": 5,
       "comportamiento": "",
       "pisable": false,
+      "ancho": 0,
       "tras_jefe": false
     },
     {
@@ -118,6 +120,7 @@
       "periodo": 5,
       "comportamiento": "",
       "pisable": false,
+      "ancho": 0,
       "tras_jefe": false
     },
     {
@@ -150,6 +153,7 @@
       "periodo": 5,
       "comportamiento": "",
       "pisable": false,
+      "ancho": 0,
       "tras_jefe": false
     }
   ],

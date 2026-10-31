@@ -14,7 +14,7 @@ using UnityEngine.SceneManagement;
 
 namespace Forja3D.EditorTools
 {
-    [Serializable] public class Simbolo { public string simbolo; public string tipo; public string modelo; public int vida = 2; public float escala = 1f; public string color; public string nombre; public bool seguir; public Linea[] dialogo; public string voz; public string aura; public bool fantasma; public bool clave; public bool desvanecer; public string arma; public int cabezas; public string direccion = "este"; public float periodo = 5f; public string comportamiento; public bool pisable; public bool tras_jefe; }
+    [Serializable] public class Simbolo { public string simbolo; public string tipo; public string modelo; public int vida = 2; public float escala = 1f; public string color; public string nombre; public bool seguir; public Linea[] dialogo; public string voz; public string aura; public bool fantasma; public bool clave; public bool desvanecer; public string arma; public int cabezas; public string direccion = "este"; public float periodo = 5f; public string comportamiento; public bool pisable; public bool tras_jefe; public int ancho; }
     [Serializable] public class JugadorDef { public string modelo; public int vida = 5; public string arma; public bool cuerda; }
     [Serializable]
     public class JuegoDef
@@ -247,11 +247,18 @@ namespace Forja3D.EditorTools
             for (int f = 0; f < filas; f++)
                 for (int col = 0; col < cols; col++)
                 {
-                    if (!esMuro[f, col] || rnd.NextDouble() > 0.7) continue;
-                    var p = Pos(f, col) + new Vector3((float)(rnd.NextDouble() - 0.5) * c * 0.6f, 0, (float)(rnd.NextDouble() - 0.5) * c * 0.6f);
-                    p.y = terreno.SampleHeight(p) - 0.4f;
-                    float tam = c * (0.55f + (float)rnd.NextDouble() * 0.7f);
-                    Roca(rocas[rnd.Next(rocas.Length)], matRoca, p, new Vector3(tam, tam * (0.8f + (float)rnd.NextDouble() * 1.1f), tam), rnd, grupoRocas, false);
+                    if (!esMuro[f, col]) continue;
+                    // Cada celda de muro es un peñasco entero que se solapa con sus vecinos: una muralla de roca continua
+                    var p = Pos(f, col) + new Vector3((float)(rnd.NextDouble() - 0.5) * c * 0.15f, 0, (float)(rnd.NextDouble() - 0.5) * c * 0.15f);
+                    p.y = terreno.SampleHeight(p) - 0.6f;
+                    float tam = c * (1.3f + (float)rnd.NextDouble() * 0.25f);
+                    Roca(rocas[rnd.Next(rocas.Length)], matRoca, p, new Vector3(tam, n.altura_muros * (1.0f + (float)rnd.NextDouble() * 0.45f), tam), rnd, grupoRocas, false);
+                    if (rnd.NextDouble() < 0.45)
+                    {
+                        float t2 = c * (0.6f + (float)rnd.NextDouble() * 0.3f);
+                        var p2 = p + new Vector3((float)(rnd.NextDouble() - 0.5) * c * 0.8f, n.altura_muros * 0.55f, (float)(rnd.NextDouble() - 0.5) * c * 0.5f);
+                        Roca(rocas[rnd.Next(rocas.Length)], matRoca, p2, new Vector3(t2, t2 * 0.8f, t2), rnd, grupoRocas, false);
+                    }
                 }
 
             // Paisaje fuera de la zona de juego: árboles muertos y peñascos en las colinas
@@ -292,40 +299,54 @@ namespace Forja3D.EditorTools
             surf.BuildNavMesh();
             if (surf.navMeshData) AssetDatabase.CreateAsset(surf.navMeshData, $"{RutaGenerado}/Datos/navmesh_{id}.asset");
 
-            // Decoración pisable (la barca de Flegias): sin colisión y fuera del NavMesh; Dante pelea sobre su cubierta
+            // Decoración pisable (la barca de Flegias): la cubierta es un rectángulo de escala × ancho celdas centrado
+            // en su símbolo, con piso de tablas, bordas que no se pueden cruzar y una barrera en la proa que cae
+            // cuando la barca encalla. El casco (modelo) se estira hasta envolver ese rectángulo.
             for (int f = 0; f < filas; f++)
                 for (int col = 0; col < cols; col++)
                 {
                     var sp = Sim(n, leyenda, f, col);
                     if (sp == null || !sp.pisable || sp.tipo != "decoracion") continue;
-                    var gb = InstanciarModelo(sp.modelo);
-                    if (!gb) continue;
-                    foreach (var ccb in gb.GetComponentsInChildren<Collider>()) UnityEngine.Object.DestroyImmediate(ccb);
-                    var lb = Forja3DImporter.Limites(gb);
-                    if (lb.size.z > lb.size.x) { gb.transform.rotation = Quaternion.Euler(0, 90, 0) * gb.transform.rotation; lb = Forja3DImporter.Limites(gb); }
-                    // La raíz del FBX viene girada (corrección de ejes): se escala una envoltura alineada con el mundo,
-                    // no la raíz (si no, el alto y el ancho se intercambian y la barca queda de canto)
-                    var envB = new GameObject("Casco"); envB.transform.position = lb.center;
-                    gb.transform.SetParent(envB.transform, true); gb = envB;
-                    // escala = largo en celdas (a lo largo de las columnas del mapa)
-                    float kxB = Mathf.Max(1f, sp.escala) * c / Mathf.Max(0.01f, lb.size.x);
-                    // A lo alto no se escala igual (si no, el casco mediría 18 m): ~4,5 m de casco, borda a ~1 m sobre la cubierta
-                    float kyB = Mathf.Min(kxB, 4.5f / Mathf.Max(0.01f, lb.size.y));
-                    var escB = gb.transform.localScale; gb.transform.localScale = new Vector3(escB.x * kxB, escB.y * kyB, escB.z * kxB);
-                    lb = Forja3DImporter.Limites(gb);
-                    var raizB = new GameObject("BarcaCubierta"); raizB.transform.SetParent(nivel.transform);
-                    raizB.transform.position = Pos(f, col);
-                    gb.transform.SetParent(raizB.transform, true);
-                    // Solo el fondo del casco queda bajo el suelo (la barca de Carón tiene la borda a ~40 % de su altura)
-                    gb.transform.position += new Vector3(raizB.transform.position.x - lb.center.x, raizB.transform.position.y - lb.min.y - lb.size.y * 0.1f, raizB.transform.position.z - lb.center.z);
-                    // Tablas de la cubierta encima del terreno (visual, sin colisión: se camina sobre el suelo)
+                    float L = Mathf.Max(2f, sp.escala) * c, W = Mathf.Max(2, sp.ancho > 0 ? sp.ancho : 5) * c;
+                    var centroB = Pos(f, col);
+                    var raizB = new GameObject("BarcaCubierta"); raizB.transform.SetParent(nivel.transform); raizB.transform.position = centroB;
+                    // Casco
+                    var modB = InstanciarModelo(sp.modelo);
+                    if (modB)
+                    {
+                        foreach (var ccb in modB.GetComponentsInChildren<Collider>()) UnityEngine.Object.DestroyImmediate(ccb);
+                        foreach (var lz in modB.GetComponentsInChildren<Light>()) UnityEngine.Object.DestroyImmediate(lz);
+                        var lb = Forja3DImporter.Limites(modB);
+                        if (lb.size.z > lb.size.x) { modB.transform.rotation = Quaternion.Euler(0, 90, 0) * modB.transform.rotation; lb = Forja3DImporter.Limites(modB); }
+                        // La raíz del FBX viene girada: se escala una envoltura alineada con el mundo
+                        var envB = new GameObject("Casco"); envB.transform.position = lb.center;
+                        modB.transform.SetParent(envB.transform, true);
+                        envB.transform.localScale = new Vector3(L * 1.1f / Mathf.Max(0.01f, lb.size.x), 3.6f / Mathf.Max(0.01f, lb.size.y), W * 1.18f / Mathf.Max(0.01f, lb.size.z));
+                        lb = Forja3DImporter.Limites(envB);
+                        envB.transform.SetParent(raizB.transform, true);
+                        // La borda (a ~40 % del alto del casco) queda a ~0,9 m sobre la cubierta
+                        envB.transform.position += new Vector3(centroB.x - lb.center.x, centroB.y - lb.min.y - lb.size.y * 0.15f, centroB.z - lb.center.z);
+                        foreach (var rb in envB.GetComponentsInChildren<Renderer>()) rb.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                        envB.transform.SetAsFirstSibling(); // Forja3DBarca mece el primer hijo
+                    }
+                    // Piso de tablas
                     var tablas = GameObject.CreatePrimitive(PrimitiveType.Cube); tablas.name = "Tablas";
                     UnityEngine.Object.DestroyImmediate(tablas.GetComponent<Collider>());
-                    tablas.transform.SetParent(gb.transform.parent, false);
-                    tablas.transform.position = raizB.transform.position + Vector3.up * 0.03f;
-                    tablas.transform.localScale = new Vector3(lb.size.x * 0.72f, 0.06f, lb.size.z * 0.62f);
-                    tablas.GetComponent<Renderer>().sharedMaterial = Mat("cubierta_barca", new Color(0.2f, 0.13f, 0.08f));
-                    foreach (var rb in gb.GetComponentsInChildren<Renderer>()) rb.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                    tablas.transform.SetParent(raizB.transform, false);
+                    tablas.transform.position = centroB + Vector3.up * 0.06f;
+                    tablas.transform.localScale = new Vector3(L, 0.1f, W);
+                    var matT = MatTablas(id, new Vector2(L / 2.4f, W / 2.4f));
+                    tablas.GetComponent<Renderer>().sharedMaterial = matT;
+                    // Bordas: no se sale de la barca (colisiones invisibles, fuera del NavMesh)
+                    void Borde(string nombre, Vector3 pos, Vector3 tam)
+                    {
+                        var bo = new GameObject(nombre); bo.transform.SetParent(raizB.transform); bo.transform.position = pos;
+                        bo.AddComponent<BoxCollider>().size = tam;
+                    }
+                    Borde("BordaIzq", centroB + new Vector3(0, 2f, W / 2f + 0.3f), new Vector3(L + 1f, 5f, 0.6f));
+                    Borde("BordaDer", centroB + new Vector3(0, 2f, -W / 2f - 0.3f), new Vector3(L + 1f, 5f, 0.6f));
+                    Borde("Popa", centroB + new Vector3(-L / 2f - 0.3f, 2f, 0), new Vector3(0.6f, 5f, W + 1f));
+                    Borde("ProaBarrera", centroB + new Vector3(L / 2f + 0.3f, 2f, 0), new Vector3(0.6f, 5f, W + 1f)); // cae al encallar
                     raizB.AddComponent<Forja3DBarca>();
                 }
 
@@ -426,14 +447,16 @@ namespace Forja3D.EditorTools
                     // Suelo jugable con ondulación suave (no afecta a la navegación)
                     if (d <= 0) alto = (detalle - 0.5f) * 0.25f + 0.12f;
                     // Justo fuera del mapa, el borde de acantilado continúa y se funde con las colinas
-                    else alto = Mathf.Max(alto, n.altura_muros * (1.1f + 0.5f * ruido) * (1f - Mathf.SmoothStep(0f, 1f, d / 14f)));
+                    else if (n.bordes == "muros") alto = Mathf.Max(alto, n.altura_muros * (1.1f + 0.5f * ruido) * (1f - Mathf.SmoothStep(0f, 1f, d / 14f)));
+                    // Con zona muerta no hay acantilado en el borde: el terreno sube suave hacia las colinas
                     // Crestas rocosas sobre las celdas de muro
                     float prof = ProfundidadMuro(wx, wz, c, filas, cols, esMuro);
                     if (prof > 0f)
                     {
                         // El relieve sube solo DENTRO de las celdas de muro: los pasos quedan limpios
                         float caida = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(prof / (c * 0.4f)));
-                        float cresta = n.altura_muros * (1.05f + 0.6f * Mathf.PerlinNoise(ox + wx * 0.31f, oz + wz * 0.31f)) + detalle * 0.8f;
+                        // Solo un zócalo bajo: el muro lo forman las rocas grandes que se colocan encima
+                        float cresta = 0.9f + 0.5f * Mathf.PerlinNoise(ox + wx * 0.31f, oz + wz * 0.31f) + detalle * 0.3f;
                         alto = Mathf.Max(alto, cresta * caida);
                     }
                     h[z, x] = Mathf.Clamp01(alto / alturaMax);
@@ -1409,7 +1432,22 @@ namespace Forja3D.EditorTools
             go.transform.SetParent(padre);
             var z = go.AddComponent<Forja3DZonaMuerta>();
             z.celda = c; z.filas = filas; z.cols = cols;
-            z.mapa = n.mapa.Select(f => new string(f.Select(ch => ch == CharZona ? 'z' : '.').ToArray())).ToArray();
+            // 'z' = las almas arrastran; 'n' = la primera franja, solo niebla (avisa antes de que empiece la muerte)
+            var m0 = n.mapa;
+            bool EsZ(int f, int col) => f < 0 || col < 0 || f >= m0.Length || col >= m0[f].Length || m0[f][col] == CharZona;
+            z.mapa = new string[m0.Length];
+            for (int f = 0; f < m0.Length; f++)
+            {
+                var fila = new char[m0[f].Length];
+                for (int col = 0; col < fila.Length; col++)
+                {
+                    if (!EsZ(f, col)) { fila[col] = '.'; continue; }
+                    bool borde = false;
+                    for (int df = -1; df <= 1 && !borde; df++) for (int dc = -1; dc <= 1; dc++) if (!EsZ(f + df, col + dc)) { borde = true; break; }
+                    fila[col] = borde ? 'n' : 'z';
+                }
+                z.mapa[f] = new string(fila);
+            }
             var tinte = Hex(n.cielo, new Color(0.2f, 0.2f, 0.2f));
             // Niebla baja y oscura sobre el anillo (avisa de que ahí no se debe pisar)
             var colNiebla = Color.Lerp(tinte, Color.black, 0.55f); colNiebla.a = 0.55f;
@@ -1527,6 +1565,37 @@ namespace Forja3D.EditorTools
             if (mat.HasProperty("_Exposure")) mat.SetFloat("_Exposure", 1.1f);
             Guardar(mat, $"cielo_{id}");
             return mat;
+        }
+
+        // Tablas de madera para la cubierta de la barca (textura generada: vetas y juntas)
+        static Material MatTablas(string id, Vector2 repeticion)
+        {
+            int T = 256; var tex = new Texture2D(T, T, TextureFormat.RGB24, true);
+            var rnd = new System.Random(77);
+            var px = new Color32[T * T]; int tablasN = 8; float ancho = T / (float)tablasN;
+            var tonos = new float[tablasN]; var juntas = new int[tablasN];
+            for (int i = 0; i < tablasN; i++) { tonos[i] = 0.8f + (float)rnd.NextDouble() * 0.4f; juntas[i] = rnd.Next(T); }
+            for (int y = 0; y < T; y++)
+            {
+                int t = Mathf.Min(tablasN - 1, (int)(y / ancho)); float dentro = y - t * ancho;
+                for (int x = 0; x < T; x++)
+                {
+                    float veta = Mathf.PerlinNoise(x * 0.02f + t * 13f, y * 0.35f) * 0.6f + Mathf.PerlinNoise(x * 0.11f, y * 0.9f + t) * 0.4f;
+                    var col = Color.Lerp(new Color(0.16f, 0.1f, 0.06f), new Color(0.36f, 0.24f, 0.14f), veta) * tonos[t];
+                    if (dentro < 1.5f || dentro > ancho - 1f) col *= 0.35f;                      // junta entre tablas
+                    if (Mathf.Abs(x - juntas[t]) < 1) col *= 0.4f;                               // extremo de la tabla
+                    col.a = 1f; px[y * T + x] = col;
+                }
+            }
+            tex.SetPixels32(px); tex.Apply();
+            string ruta = $"{RutaGenerado}/Datos/tablas_{id}.png";
+            File.WriteAllBytes(ruta, tex.EncodeToPNG()); UnityEngine.Object.DestroyImmediate(tex);
+            AssetDatabase.ImportAsset(ruta, ImportAssetOptions.ForceSynchronousImport);
+            if (AssetImporter.GetAtPath(ruta) is TextureImporter ti) { ti.wrapMode = TextureWrapMode.Repeat; ti.maxTextureSize = 256; ti.SaveAndReimport(); }
+            var m = new Material(Shader.Find("Standard")) { mainTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(ruta), mainTextureScale = repeticion };
+            m.SetFloat("_Glossiness", 0.15f);
+            Guardar(m, $"tablas_{id}");
+            return m;
         }
 
         static Color Hex(string hex, Color def) =>
