@@ -184,6 +184,7 @@
   "transicion": "Minos se enroscó la cola para dictar sentencia, pero no pudo detenerlos.\n\nBajaron al segundo círculo, donde toda luz calla. Allí brama un viento infernal que nunca descansa y arrastra a los espíritus en remolinos, como a los estorninos en invierno.",
   "meta_modelo": "",
   "color_rio": "",
+  "bordes": "zona_muerta",
   "clima": "",
   "lentitud": 1,
   "terreno": {

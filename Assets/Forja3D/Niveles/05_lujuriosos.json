@@ -187,6 +187,7 @@
   "transicion": "Y Dante cayó como cae un cuerpo muerto.\n\nAl volver en sí, el viaje seguía: más abajo lo esperaba la lluvia eterna, maldita, fría y pesada del tercer círculo, donde ladra Cerbero.",
   "meta_modelo": "",
   "color_rio": "",
+  "bordes": "zona_muerta",
   "clima": "",
   "lentitud": 1,
   "terreno": {

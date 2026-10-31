@@ -149,6 +149,7 @@
   "transicion": "Pasada la puerta, el aire se llenó de suspiros bajo un cielo sin estrellas. Corrían allí, detrás de una bandera que nunca se detiene, los que vivieron sin infamia y sin alabanza.\n\nMás allá se abría una ribera, y en ella esperaban en silencio las almas, mirando el agua oscura por donde llegaría un barquero viejo de ojos como brasas.",
   "meta_modelo": "",
   "color_rio": "",
+  "bordes": "zona_muerta",
   "clima": "",
   "lentitud": 1,
   "terreno": {

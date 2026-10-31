@@ -209,6 +209,7 @@
   "transicion": "Bajamos a la cuarta orilla, adentrándonos en la ribera dolorosa que encierra todo el mal del universo.\n\nMás abajo hervía un agua negra como la tinta: la laguna que llaman Estigia, donde se revuelcan los iracundos.",
   "meta_modelo": "",
   "color_rio": "",
+  "bordes": "zona_muerta",
   "clima": "",
   "lentitud": 1,
   "terreno": {

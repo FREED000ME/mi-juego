@@ -202,6 +202,7 @@
   "transicion": "Dejaron atrás la selva y el monte que Dante no pudo subir. Virgilio iba delante; Dante, detrás, con el miedo todavía en el pecho.\n\nAl caer la tarde llegaron ante una puerta alta y oscura. Sobre ella, en color sombrío, había unas palabras escritas que ningún vivo debería leer.",
   "meta_modelo": "",
   "color_rio": "",
+  "bordes": "zona_muerta",
   "clima": "",
   "lentitud": 1,
   "terreno": {

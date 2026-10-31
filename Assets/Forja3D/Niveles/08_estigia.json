@@ -215,6 +215,7 @@
   "transicion": "Ya el barquero había caído al agua negra. Delante se alzaban las mezquitas de la ciudad, bermejas como si salieran del fuego.\n\nHabíamos llegado a las puertas de Dite, y sobre ellas vi más de mil caídos del cielo.",
   "meta_modelo": "puerta",
   "color_rio": "#10231a",
+  "bordes": "zona_muerta",
   "clima": "",
   "lentitud": 1,
   "terreno": {

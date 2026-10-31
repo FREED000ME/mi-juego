@@ -39,6 +39,7 @@ namespace Forja3D.EditorTools
         public string color_muros = "#8c8478";
         public string ambiente = "infierno";
         public string color_rio; // "#rrggbb": agua de los ríos (Estigia negra); vacío = Aqueronte rojizo
+        public string bordes = "zona_muerta"; // "zona_muerta": sin muros en la orilla, anillo donde las almas te arrastran; "muros": como antes
         public Linea[] intro;
         public Linea[] salida;
         public string recompensa_arma;   // p. ej. "hoz": sustituye al arma al vencer a todos los jefes
@@ -131,6 +132,9 @@ namespace Forja3D.EditorTools
             if (n.mapa == null || n.mapa.Length == 0) throw new Exception($"Nivel {id}: falta el mapa.");
             var leyenda = new Dictionary<char, Simbolo>(Base);
             if (n.leyenda != null) foreach (var s in n.leyenda) if (!string.IsNullOrEmpty(s.simbolo)) leyenda[s.simbolo[0]] = s;
+            // Zona muerta: el marco de muros se quita y el mapa se amplía con un anillo de tierra maldita
+            bool zonaMuerta = n.bordes != "muros";
+            if (zonaMuerta) { n.mapa = AmpliarConZonaMuerta(n.mapa, AnilloZona); leyenda[CharZona] = new Simbolo { tipo = "zona" }; }
 
             var escena = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             float c = Mathf.Max(1f, n.celda);
@@ -149,7 +153,10 @@ namespace Forja3D.EditorTools
             luz.transform.rotation = Quaternion.Euler(50, -35, 0);
             var cielo = Hex(n.cielo, new Color(0.56f, 0.79f, 0.94f));
             var sky = AssetDatabase.GetBuiltinExtraResource<Material>("Default-Skybox.mat");
-            if (sky) { var m = new Material(sky); if (m.HasProperty("_SkyTint")) m.SetColor("_SkyTint", cielo); Guardar(m, $"cielo_{id}"); RenderSettings.skybox = m; }
+            // Cielo pintado por ambientación (selva nocturna, infierno, limbo, tormenta); si falla, el procedural teñido
+            var pano = CieloPanoramico(n, id, cielo);
+            if (pano) RenderSettings.skybox = pano;
+            else if (sky) { var m = new Material(sky); if (m.HasProperty("_SkyTint")) m.SetColor("_SkyTint", cielo); Guardar(m, $"cielo_{id}"); RenderSettings.skybox = m; }
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
             RenderSettings.ambientSkyColor = cielo; RenderSettings.ambientEquatorColor = cielo * 0.7f; RenderSettings.ambientGroundColor = new Color(0.3f, 0.28f, 0.25f);
             RenderSettings.fog = n.niebla; RenderSettings.fogColor = cielo; RenderSettings.fogMode = FogMode.Linear;
@@ -262,6 +269,22 @@ namespace Forja3D.EditorTools
                     d.transform.rotation = Quaternion.Euler(0, (f * 73 + col * 37) % 360, 0);
                 }
 
+            // Límite exterior invisible del anillo de zona muerta (nadie sale del mapa)
+            if (zonaMuerta)
+            {
+                float an = cols * c, la = filas * c;
+                void Pared(Vector3 centro, Vector3 tam)
+                {
+                    var w = new GameObject("LimiteExterior"); w.transform.SetParent(nivel.transform);
+                    w.transform.position = centro; w.AddComponent<BoxCollider>().size = tam;
+                    GameObjectUtility.SetStaticEditorFlags(w, StaticEditorFlags.NavigationStatic);
+                }
+                Pared(new Vector3(an / 2f - c / 2f, 3f, -c), new Vector3(an + 4 * c, 12f, c));
+                Pared(new Vector3(an / 2f - c / 2f, 3f, la), new Vector3(an + 4 * c, 12f, c));
+                Pared(new Vector3(-c, 3f, la / 2f - c / 2f), new Vector3(c, 12f, la + 4 * c));
+                Pared(new Vector3(an, 3f, la / 2f - c / 2f), new Vector3(c, 12f, la + 4 * c));
+            }
+
             // NavMesh antes de poner personajes y objetos dinámicos
             var surf = nivel.AddComponent<NavMeshSurface>();
             surf.collectObjects = CollectObjects.Children;
@@ -280,6 +303,10 @@ namespace Forja3D.EditorTools
                     foreach (var ccb in gb.GetComponentsInChildren<Collider>()) UnityEngine.Object.DestroyImmediate(ccb);
                     var lb = Forja3DImporter.Limites(gb);
                     if (lb.size.z > lb.size.x) { gb.transform.rotation = Quaternion.Euler(0, 90, 0) * gb.transform.rotation; lb = Forja3DImporter.Limites(gb); }
+                    // La raíz del FBX viene girada (corrección de ejes): se escala una envoltura alineada con el mundo,
+                    // no la raíz (si no, el alto y el ancho se intercambian y la barca queda de canto)
+                    var envB = new GameObject("Casco"); envB.transform.position = lb.center;
+                    gb.transform.SetParent(envB.transform, true); gb = envB;
                     // escala = largo en celdas (a lo largo de las columnas del mapa)
                     float kxB = Mathf.Max(1f, sp.escala) * c / Mathf.Max(0.01f, lb.size.x);
                     // A lo alto no se escala igual (si no, el casco mediría 18 m): ~4,5 m de casco, borda a ~1 m sobre la cubierta
@@ -330,6 +357,7 @@ namespace Forja3D.EditorTools
                     }
                 }
             if (inicio == null) throw new Exception($"Nivel {id}: falta la P del jugador.");
+            if (zonaMuerta) ZonaMuerta(n, id, c, filas, cols, dinamicos);
             if (meta != null) Meta(meta.Value, c, dinamicos, id, inicio.Value, rocas, matRoca, n.meta_modelo);
             if (meta == null) throw new Exception($"Nivel {id}: falta la M de la meta.");
 
@@ -1352,6 +1380,154 @@ namespace Forja3D.EditorTools
             return cacheMat[ruta] = m;
         }
         static void Guardar(UnityEngine.Object o, string nombre) => AssetDatabase.CreateAsset(o, $"{RutaGenerado}/Datos/{nombre}.mat");
+
+        // ---------- Zona muerta (bordes del mapa) ----------
+        const int AnilloZona = 3;          // celdas de tierra maldita alrededor del mapa
+        const char CharZona = '·';    // símbolo interno (no se usa en los JSON)
+
+        static string[] AmpliarConZonaMuerta(string[] mapa, int k)
+        {
+            int filas = mapa.Length, cols = mapa.Max(f => f.Length);
+            var res = new List<string>();
+            string vacia = new string(CharZona, cols + 2 * k);
+            for (int i = 0; i < k; i++) res.Add(vacia);
+            for (int f = 0; f < filas; f++)
+            {
+                var fila = mapa[f].PadRight(cols, ' ').ToCharArray();
+                for (int col = 0; col < cols; col++)
+                    if ((f == 0 || f == filas - 1 || col == 0 || col == cols - 1) && fila[col] == '#') fila[col] = CharZona; // el marco de muros desaparece
+                var z = new string(CharZona, k);
+                res.Add(z + new string(fila) + z);
+            }
+            for (int i = 0; i < k; i++) res.Add(vacia);
+            return res.ToArray();
+        }
+
+        static void ZonaMuerta(Nivel n, string id, float c, int filas, int cols, Transform padre)
+        {
+            var go = new GameObject("ZonaMuerta");
+            go.transform.SetParent(padre);
+            var z = go.AddComponent<Forja3DZonaMuerta>();
+            z.celda = c; z.filas = filas; z.cols = cols;
+            z.mapa = n.mapa.Select(f => new string(f.Select(ch => ch == CharZona ? 'z' : '.').ToArray())).ToArray();
+            var tinte = Hex(n.cielo, new Color(0.2f, 0.2f, 0.2f));
+            // Niebla baja y oscura sobre el anillo (avisa de que ahí no se debe pisar)
+            var colNiebla = Color.Lerp(tinte, Color.black, 0.55f); colNiebla.a = 0.55f;
+            void Niebla(Vector3 centro, Vector3 tam)
+            {
+                var g = new GameObject("NieblaZona"); g.transform.SetParent(go.transform); g.transform.position = centro;
+                var ps = g.AddComponent<ParticleSystem>(); ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                var main = ps.main; main.loop = true; main.startLifetime = new ParticleSystem.MinMaxCurve(4f, 7f);
+                main.startSpeed = new ParticleSystem.MinMaxCurve(0.05f, 0.25f); main.startSize = new ParticleSystem.MinMaxCurve(2.5f, 5f);
+                main.startColor = colNiebla; main.maxParticles = 140; main.simulationSpace = ParticleSystemSimulationSpace.World;
+                var em = ps.emission; em.rateOverTime = Mathf.Clamp(tam.x * tam.z / 18f, 4f, 30f);
+                var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Box; sh.scale = tam;
+                var col = ps.colorOverLifetime; col.enabled = true;
+                var gr = new Gradient(); gr.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) }, new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.3f), new GradientAlphaKey(0f, 1f) });
+                col.color = gr;
+                g.GetComponent<ParticleSystemRenderer>().sharedMaterial = MatParticula();
+                ps.Play();
+            }
+            float an = cols * c, la = filas * c, w = AnilloZona * c;
+            Niebla(new Vector3(an / 2f - c / 2f, 0.6f, w / 2f - c / 2f), new Vector3(an, 0.8f, w));
+            Niebla(new Vector3(an / 2f - c / 2f, 0.6f, la - w / 2f - c / 2f), new Vector3(an, 0.8f, w));
+            Niebla(new Vector3(w / 2f - c / 2f, 0.6f, la / 2f - c / 2f), new Vector3(w, 0.8f, la - 2 * w));
+            Niebla(new Vector3(an - w / 2f - c / 2f, 0.6f, la / 2f - c / 2f), new Vector3(w, 0.8f, la - 2 * w));
+            // Almas que surgen del suelo: copias inertes del condenado (solo malla y Animator), apagadas hasta que se pisa la zona
+            for (int i = 0; i < 6; i++)
+            {
+                var a = InstanciarModelo("condenado");
+                if (!a)
+                {
+                    a = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+                    a.GetComponent<Renderer>().sharedMaterial = Mat("alma_zona", new Color(0.12f, 0.1f, 0.1f));
+                }
+                else AjustarAltura(a, 1.75f);
+                foreach (var cc in a.GetComponentsInChildren<Collider>()) UnityEngine.Object.DestroyImmediate(cc);
+                foreach (var cc in a.GetComponentsInChildren<CharacterController>()) UnityEngine.Object.DestroyImmediate(cc);
+                foreach (var mb in a.GetComponentsInChildren<MonoBehaviour>()) UnityEngine.Object.DestroyImmediate(mb);
+                foreach (var an2 in a.GetComponentsInChildren<Animator>()) an2.applyRootMotion = false;
+                a.name = "AlmaZona"; a.transform.SetParent(go.transform);
+                a.SetActive(false);
+            }
+        }
+
+        // ---------- Cielo pintado (panorámico 360°) por ambientación ----------
+        // Equirectangular 1024×512 generado aquí con ruido: ~0,7 MB en el APK por nivel, coste de dibujo nulo.
+        static Material CieloPanoramico(Nivel n, string id, Color cielo)
+        {
+            var sh = Shader.Find("Skybox/Panoramic");
+            if (!sh) return null;
+            string est = (n.ambiente ?? "infierno").ToLowerInvariant();
+            int W = 1024, H = 512;
+            var rnd = new System.Random((n.terreno?.semilla ?? 1) * 31 + id.GetHashCode());
+            float ox = (float)rnd.NextDouble() * 100f, oz = (float)rnd.NextDouble() * 100f;
+            // Paleta: horizonte, cénit, nubes, suelo
+            Color hor = Color.Lerp(cielo, Color.white, 0.15f), zen = cielo * 0.35f, nube = cielo * 0.6f, suelo = cielo * 0.25f;
+            float densidad = 0.5f, estrellas = 0f; Color brillo = Color.black; float brilloAlto = 0.15f;
+            switch (est)
+            {
+                case "selva": hor = new Color(0.16f, 0.2f, 0.3f); zen = new Color(0.02f, 0.03f, 0.08f); nube = new Color(0.12f, 0.14f, 0.2f); suelo = new Color(0.03f, 0.04f, 0.05f); densidad = 0.35f; estrellas = 0.004f; break;
+                case "limbo": hor = new Color(0.5f, 0.52f, 0.45f); zen = new Color(0.22f, 0.24f, 0.22f); nube = new Color(0.42f, 0.44f, 0.4f); suelo = new Color(0.15f, 0.16f, 0.14f); densidad = 0.6f; brillo = new Color(0.25f, 0.24f, 0.18f); brilloAlto = 0.35f; break;
+                case "tormenta": hor = Color.Lerp(cielo, new Color(0.25f, 0.3f, 0.3f), 0.5f); zen = new Color(0.04f, 0.05f, 0.06f); nube = new Color(0.1f, 0.12f, 0.13f); suelo = new Color(0.04f, 0.05f, 0.05f); densidad = 0.85f; break;
+                default: hor = Color.Lerp(cielo, new Color(0.75f, 0.22f, 0.06f), 0.6f); zen = new Color(0.04f, 0.01f, 0.01f); nube = new Color(0.1f, 0.04f, 0.03f); suelo = new Color(0.08f, 0.02f, 0.01f); densidad = 0.7f; brillo = new Color(0.9f, 0.3f, 0.05f); brilloAlto = 0.12f; break; // infierno: resplandor de fuego bajo el humo
+            }
+            float Fbm(float u0, float v0) { float acc = 0f, amp = 0.5f, fr = 1f; for (int o = 0; o < 5; o++) { acc += amp * Mathf.PerlinNoise(u0 * fr + ox, v0 * fr + oz); amp *= 0.5f; fr *= 2.03f; } return acc; }
+            var px = new Color32[W * H];
+            for (int y = 0; y < H; y++)
+            {
+                float lat = (y / (float)(H - 1) - 0.5f) * Mathf.PI; float sy = Mathf.Sin(lat), cy = Mathf.Cos(lat);
+                for (int x = 0; x < W; x++)
+                {
+                    float lon = x / (float)W * Mathf.PI * 2f;
+                    var d = new Vector3(cy * Mathf.Cos(lon), sy, cy * Mathf.Sin(lon));
+                    Color col;
+                    if (d.y < 0f) col = Color.Lerp(hor * 0.6f, suelo, Mathf.Clamp01(-d.y * 4f));
+                    else
+                    {
+                        col = Color.Lerp(hor, zen, Mathf.Pow(d.y, 0.55f));
+                        col += brillo * Mathf.Clamp01(1f - d.y / brilloAlto) * 0.8f;
+                        // Nubes proyectadas en un plano (no se estiran en el cénit y no tienen costura)
+                        float k = 1f / (d.y + 0.18f);
+                        float nv = Fbm(d.x * k * 1.4f, d.z * k * 1.4f);
+                        float cub = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((nv - (1f - densidad) * 0.65f) * 2.4f)) * Mathf.Clamp01(d.y * 6f + 0.25f);
+                        var cn = nube + brillo * 0.35f * Mathf.Clamp01(1f - d.y * 3f);
+                        col = Color.Lerp(col, cn, cub * 0.85f);
+                        if (estrellas > 0f && cub < 0.3f && rnd.NextDouble() < estrellas * d.y) col = Color.Lerp(col, Color.white, 0.6f + (float)rnd.NextDouble() * 0.4f);
+                    }
+                    col.a = 1f;
+                    px[y * W + x] = col;
+                }
+            }
+            // Luna sobre la selva oscura
+            if (est == "selva")
+            {
+                int cx = W / 3, cyy = (int)(H * 0.78f), r = 14;
+                for (int y = -r - 6; y <= r + 6; y++) for (int x = -r - 6; x <= r + 6; x++)
+                {
+                    float dd = Mathf.Sqrt(x * x + y * y); int ix = cx + x, iy = cyy + y; if (iy < 0 || iy >= H) continue;
+                    Color b = px[iy * W + ((ix % W) + W) % W];
+                    Color m = dd <= r ? new Color(0.85f, 0.85f, 0.78f) : Color.Lerp(new Color(0.4f, 0.42f, 0.45f), b, Mathf.Clamp01((dd - r) / 6f));
+                    m.a = 1f; px[iy * W + ((ix % W) + W) % W] = m;
+                }
+            }
+            var tex = new Texture2D(W, H, TextureFormat.RGB24, false); tex.SetPixels32(px); tex.Apply();
+            string ruta = $"{RutaGenerado}/Datos/cielo_{id}.png";
+            File.WriteAllBytes(ruta, tex.EncodeToPNG()); UnityEngine.Object.DestroyImmediate(tex);
+            AssetDatabase.ImportAsset(ruta, ImportAssetOptions.ForceSynchronousImport);
+            if (AssetImporter.GetAtPath(ruta) is TextureImporter ti)
+            {
+                ti.mipmapEnabled = false; ti.wrapModeU = TextureWrapMode.Repeat; ti.wrapModeV = TextureWrapMode.Clamp; ti.maxTextureSize = 1024;
+                ti.textureCompression = TextureImporterCompression.Compressed; ti.SaveAndReimport();
+            }
+            var mat = new Material(sh) { name = $"cielo_{id}" };
+            mat.SetTexture("_MainTex", AssetDatabase.LoadAssetAtPath<Texture2D>(ruta));
+            if (mat.HasProperty("_Mapping")) mat.SetFloat("_Mapping", 1f);   // latitud-longitud
+            if (mat.HasProperty("_ImageType")) mat.SetFloat("_ImageType", 0f); // 360°
+            if (mat.HasProperty("_Exposure")) mat.SetFloat("_Exposure", 1.1f);
+            Guardar(mat, $"cielo_{id}");
+            return mat;
+        }
 
         static Color Hex(string hex, Color def) =>
             !string.IsNullOrEmpty(hex) && ColorUtility.TryParseHtmlString(hex, out var c) ? c : def;
