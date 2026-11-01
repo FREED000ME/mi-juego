@@ -21,6 +21,14 @@
       "tipo": "juego",
       "genero": "supervivencia horror 3D",
       "creado": "2026-10-30"
+    },
+    {
+      "repo": "FREED000ME/milo-el-beagle",
+      "nombre": "milo-el-beagle",
+      "rama": "main",
+      "tipo": "basica",
+      "genero": "cine",
+      "creado": "2026-11-01"
     }
   ]
 }
