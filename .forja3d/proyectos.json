@@ -1,5 +1,5 @@
 {
-  "activo": "noche-de-animas",
+  "activo": "visor-modelos-3d",
   "proyectos": [
     {
       "repo": "FREED000ME/mi-juego",
@@ -36,6 +36,14 @@
       "rama": "main",
       "tipo": "animacion",
       "genero": "biblioteca de animaciones",
+      "creado": "2026-11-03"
+    },
+    {
+      "repo": "FREED000ME/visor-modelos-3d",
+      "nombre": "visor-modelos-3d",
+      "rama": "main",
+      "tipo": "basica",
+      "genero": "visor 3D",
       "creado": "2026-11-03"
     }
   ]
