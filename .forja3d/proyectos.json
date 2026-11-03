@@ -29,6 +29,14 @@
       "tipo": "basica",
       "genero": "cine",
       "creado": "2026-11-01"
+    },
+    {
+      "repo": "FREED000ME/forja3d-animacion",
+      "nombre": "forja3d-animacion",
+      "rama": "main",
+      "tipo": "animacion",
+      "genero": "biblioteca de animaciones",
+      "creado": "2026-11-03"
     }
   ]
 }
