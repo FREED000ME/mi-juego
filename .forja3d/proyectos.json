@@ -1,5 +1,5 @@
 {
-  "activo": "visor-modelos-3d",
+  "activo": "gatito-bailarin",
   "proyectos": [
     {
       "repo": "FREED000ME/mi-juego",
@@ -45,6 +45,14 @@
       "tipo": "basica",
       "genero": "visor 3D",
       "creado": "2026-11-03"
+    },
+    {
+      "repo": "FREED000ME/gatito-bailarin",
+      "nombre": "gatito-bailarin",
+      "rama": "main",
+      "tipo": "cine",
+      "genero": "cine",
+      "creado": "2026-11-12"
     }
   ]
 }
